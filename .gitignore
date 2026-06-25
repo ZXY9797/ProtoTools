@@ -1,0 +1,59 @@
+# Build
+build/
+build-*/
+cmake-build-*/
+dist/
+
+# Qt Creator
+*.pro.user
+*.qbs.user
+*.cmake.user
+CMakeLists.txt.user
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Qt MOC/AUTOMOC
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+*_automoc.cpp
+*.moc
+
+# Object files
+*.o
+*.obj
+
+# Libraries
+*.a
+*.lib
+*.so
+*.dylib
+
+# Executables
+*.app
+*.exe
+
+# Generated
+*.autosave
+*.qmlc
+*.jsc
+
+# Config (generated at runtime)
+config/settings.ini
+
+# IDE temp
+*.autosave
+*.creator.user

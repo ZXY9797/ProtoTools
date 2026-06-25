@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<style-scheme version="1.0" name="ProtoDebug Dark">
+  <!-- General Colors -->
+  <style name="Text" foreground="#D4D4D4" background="#1E1E1E"/>
+  <style name="Selection" background="#264F78" foreground="#FFFFFF"/>
+  <style name="LineNumber" foreground="#555555" background="#1A1A1A"/>
+  <style name="CurrentLine" background="#2A2D2E"/>
+  <style name="CurrentLineNumber" foreground="#FFFFFF" bold="true"/>
+  <style name="Occurrences" background="#323232"/>
+  <style name="SearchResult" background="#515C6A"/>
+
+  <!-- Syntax Highlighting -->
+  <style name="Keyword" foreground="#C586C0" bold="true"/>
+  <style name="Type" foreground="#4EC9B0"/>
+  <style name="Function" foreground="#DCDCAA"/>
+  <style name="String" foreground="#CE9178"/>
+  <style name="Number" foreground="#B5CEA8"/>
+  <style name="Comment" foreground="#6A9955" italic="true"/>
+  <style name="Operator" foreground="#D4D4D4"/>
+  <style name="Preprocessor" foreground="#C586C0" italic="true"/>
+  <style name="Local" foreground="#9CDCFE"/>
+  <style name="Global" foreground="#4FC1FF"/>
+  <style name="Field" foreground="#9CDCFE"/>
+
+  <!-- Braces and Matching -->
+  <style name="Parentheses" background="#3B3B3B" foreground="#FFD700"/>
+  <style name="ParenthesesMismatch" background="#F44747" foreground="#FFFFFF"/>
+
+  <!-- Auto Complete -->
+  <style name="AutoComplete" foreground="#FFFFFF" background="#264F78"/>
+
+  <!-- Errors and Warnings -->
+  <style name="Warning" underlineColor="#CCA700" underlineStyle="SingleUnderline"/>
+  <style name="Error" underlineColor="#F44747" underlineStyle="SingleUnderline"/>
+  <style name="DisabledCode" foreground="#5C5C5C" italic="true"/>
+
+  <!-- Diff Highlighting -->
+  <style name="AddedLine" foreground="#89D185"/>
+  <style name="RemovedLine" foreground="#F44747"/>
+</style-scheme>
