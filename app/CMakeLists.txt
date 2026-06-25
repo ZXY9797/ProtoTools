@@ -186,7 +186,6 @@ set(SOURCES
     src/DataModel/SettingsManager.cpp
     src/Script/LuaEngine.cpp
     src/Script/LuaCodeEditor.cpp
-    src/Script/QMLLuaHighlighter.cpp
     src/Misc/TimerEvents.cpp
     src/Misc/CommonFonts.cpp
     src/Misc/ThemeManager.cpp
@@ -216,7 +215,6 @@ set(HEADERS
     src/DataModel/SettingsManager.h
     src/Script/LuaEngine.h
     src/Script/LuaCodeEditor.h
-    src/Script/QMLLuaHighlighter.h
     src/Misc/TimerEvents.h
     src/Misc/CommonFonts.h
     src/Misc/ThemeManager.h
@@ -252,11 +250,8 @@ set(QML_SOURCES
     qml/Panes/SetupPanes/Drivers/Stub.qml
     qml/Panes/ToolPanel.qml
     qml/Widgets/StatusBar.qml
-    qml/Widgets/TitleBar.qml
-    qml/Widgets/MenuBar.qml
     qml/Widgets/QuickCmd.qml
     qml/Widgets/ResponseFrameBox.qml
-    qml/Widgets/QMLCodeEditor.qml
 )
 
 #-----------------------------------------------------------------------------

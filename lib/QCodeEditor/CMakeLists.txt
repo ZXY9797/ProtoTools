@@ -3,13 +3,6 @@ project(QCodeEditor)
 
 set(CMAKE_CXX_STANDARD 17)
 
-option(BUILD_EXAMPLE "Example building required" OFF)
-
-if (${BUILD_EXAMPLE})
- message(STATUS "QCodeEditor example will be built.")
- add_subdirectory(example)
-endif()
-
 set(RESOURCES_FILE
  resources/qcodeeditor_resources.qrc
 )

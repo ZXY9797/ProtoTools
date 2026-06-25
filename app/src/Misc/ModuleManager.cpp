@@ -35,7 +35,6 @@
 #include "DataModel/SettingsManager.h"
 #include "Script/LuaEngine.h"
 
-#include "Script/QMLLuaHighlighter.h"
 #include "Script/LuaCodeEditor.h"
 
 namespace Misc {
@@ -56,7 +55,6 @@ void ModuleManager::registerQmlTypes()
     qmlRegisterType<DataMonitorModel>("ProtoDebug", 1, 0, "DataMonitorModel");
     qmlRegisterType<TerminalWidget>("ProtoDebug", 1, 0, "TerminalWidget");
     qmlRegisterType<LuaCodeEditor>("ProtoDebug", 1, 0, "LuaCodeEditor");
-    qmlRegisterType<QMLLuaHighlighter>("ProtoDebug", 1, 0, "QMLLuaHighlighter");
 
     // Drivers (uncreatable — QML 只读属性)
     qmlRegisterUncreatableType<IO::Drivers::UART>("ProtoDebug", 1, 0, "UartDriver",

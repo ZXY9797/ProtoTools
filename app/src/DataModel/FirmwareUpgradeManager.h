@@ -211,7 +211,7 @@ private:
     int m_srcAddr = 0x0101;
     int m_dstAddr = 0x0500;
     int m_requestedPacketSize = 65535;
-    int m_timeoutMs = 2000;
+    int m_timeoutMs = 3000;
     int m_retries = 3;
 
     quint16 m_nextSeq = 1;

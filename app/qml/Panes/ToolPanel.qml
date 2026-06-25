@@ -21,6 +21,7 @@ Rectangle {
     property string editorResponseStatus: "发送协议后显示完整回包"
     property var quickResponseFrame: ({})
     property string quickResponseStatus: "发送快捷指令后显示当前回包"
+    readonly property int responseTimeoutMs: 3000
     property color pageBg: "#101419"
     property color surface: "#171D24"
     property color surfaceRaised: "#1B222B"
@@ -41,7 +42,11 @@ Rectangle {
         if (value === undefined || value === null)
             return defaultValue
         var text = value.toString()
-        return text.length > 0 ? text : defaultValue
+        return text.length > 0 ? displayHexText(text) : defaultValue
+    }
+
+    function displayHexText(value) {
+        return String(value || "").replace(/0X/g, "0x")
     }
 
     // 表单参数保存
@@ -59,6 +64,20 @@ Rectangle {
     }
 
     ListModel { id: historyModel }
+
+    Timer {
+        id: editorResponseTimeout
+        interval: root.responseTimeoutMs
+        repeat: false
+        onTriggered: root.handleResponseTimeout("editor")
+    }
+
+    Timer {
+        id: quickResponseTimeout
+        interval: root.responseTimeoutMs
+        repeat: false
+        onTriggered: root.handleResponseTimeout("quick")
+    }
 
     // ========== 历史弹出列表 ==========
     Popup {
@@ -114,12 +133,12 @@ Rectangle {
                     Row { anchors.fill: parent; spacing: 0
                         PopCell { text: (index + 1).toString(); width: 24; color: "#555" }
                         PopCell { text: model.timestamp || ""; width: 56; color: "#888" }
-                        PopCell { text: model.src || ""; width: 50; color: "#9CDCFE" }
-                        PopCell { text: model.dst || ""; width: 50; color: "#9CDCFE" }
+                        PopCell { text: root.displayHexText(model.src || ""); width: 50; color: "#9CDCFE" }
+                        PopCell { text: root.displayHexText(model.dst || ""); width: 50; color: "#9CDCFE" }
                         PopCell { text: model.seq || ""; width: 36; color: "#569CD6" }
-                        PopCell { text: model.cmdset || ""; width: 36; color: "#C586C0" }
-                        PopCell { text: model.cmdid || ""; width: 36; color: "#DCDCAA" }
-                        PopCell { text: model.data || ""; width: Math.max(50, popupList.width - 294); color: "#D4D4D4"; elide: Text.ElideRight }
+                        PopCell { text: root.displayHexText(model.cmdset || ""); width: 36; color: "#C586C0" }
+                        PopCell { text: root.displayHexText(model.cmdid || ""); width: 36; color: "#DCDCAA" }
+                        PopCell { text: root.displayHexText(model.data || ""); width: Math.max(50, popupList.width - 294); color: "#D4D4D4"; elide: Text.ElideRight }
                     }
                     MouseArea {
                         id: popMouse; anchors.fill: parent; hoverEnabled: true
@@ -766,11 +785,41 @@ Rectangle {
                             }
 
                             Button {
+                                id: browseFirmwareButton
                                 text: "..."
-                                implicitWidth: 36
+                                implicitWidth: 34
                                 implicitHeight: 28
+                                padding: 0
                                 enabled: !firmwareUpgrade.running
                                 onClicked: firmwareUpgrade.browseFirmware(compactFirmwarePathField.text)
+                                contentItem: Item {
+                                    implicitWidth: 34
+                                    implicitHeight: 28
+
+                                    Row {
+                                        anchors.centerIn: parent
+                                        spacing: 2
+
+                                        Repeater {
+                                            model: 3
+                                            Rectangle {
+                                                width: 3
+                                                height: 3
+                                                radius: 1.5
+                                                color: browseFirmwareButton.enabled ? root.textSecondary : root.textMuted
+                                                opacity: browseFirmwareButton.enabled ? 0.82 : 0.4
+                                            }
+                                        }
+                                    }
+                                }
+                                background: Rectangle {
+                                    radius: 7
+                                    color: !browseFirmwareButton.enabled ? "#151B22"
+                                        : (browseFirmwareButton.hovered ? "#243447" : root.surfaceSoft)
+                                    border.color: browseFirmwareButton.activeFocus ? root.accentHover
+                                        : (browseFirmwareButton.hovered ? root.accent : root.outlineStrong)
+                                    border.width: 1
+                                }
                             }
                         }
 
@@ -843,8 +892,8 @@ Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: 54
                         radius: 8
-                        color: root.surfaceRaised
-                        border.color: root.outline
+                        color: "#18212A"
+                        border.color: firmwareUpgrade.running ? "#376FA7" : root.outline
                         property real percent: Math.max(0, Math.min(100, firmwareUpgrade.progress))
 
                         ColumnLayout {
@@ -856,27 +905,67 @@ Rectangle {
                                 Layout.fillWidth: true
                                 Text { text: "升级进度"; color: root.textPrimary; font.pixelSize: 11; font.weight: Font.DemiBold }
                                 Item { Layout.fillWidth: true }
-                                Text {
-                                    text: Math.round(compactProgressPanel.percent) + "%"
-                                    color: firmwareUpgrade.running ? "#6ED6FF" : root.textSecondary
-                                    font.pixelSize: 11
-                                    font.weight: Font.Medium
+                                Rectangle {
+                                    implicitWidth: progressPercentText.implicitWidth + 14
+                                    implicitHeight: 19
+                                    radius: 9
+                                    color: firmwareUpgrade.running ? "#173653" : "#202832"
+                                    border.color: firmwareUpgrade.running ? "#3A8BC5" : root.outlineStrong
+
+                                    Text {
+                                        id: progressPercentText
+                                        anchors.centerIn: parent
+                                        text: Math.round(compactProgressPanel.percent) + "%"
+                                        color: firmwareUpgrade.running ? "#9AE8FF" : root.textSecondary
+                                        font.pixelSize: 10
+                                        font.weight: Font.DemiBold
+                                    }
                                 }
                             }
 
                             Rectangle {
                                 Layout.fillWidth: true
-                                implicitHeight: 9
-                                radius: 5
-                                color: "#121820"
+                                implicitHeight: 12
+                                radius: 6
+                                color: "#111922"
                                 border.color: root.outline
                                 clip: true
+
                                 Rectangle {
+                                    id: progressFill
                                     width: parent.width * compactProgressPanel.percent / 100
                                     height: parent.height
-                                    radius: 5
-                                    color: firmwareUpgrade.running ? root.accent : "#4D647C"
+                                    radius: 6
+                                    gradient: Gradient {
+                                        GradientStop { position: 0.0; color: firmwareUpgrade.running ? "#38C8FF" : "#536B83" }
+                                        GradientStop { position: 1.0; color: firmwareUpgrade.running ? "#2F8DFF" : "#43576D" }
+                                    }
                                     Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                                    Rectangle {
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.top: parent.top
+                                        height: 4
+                                        radius: 4
+                                        color: "#FFFFFF"
+                                        opacity: firmwareUpgrade.running ? 0.16 : 0.07
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: 18
+                                    height: parent.height
+                                    radius: 6
+                                    opacity: firmwareUpgrade.running ? 0.26 : 0
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0.0; color: "transparent" }
+                                        GradientStop { position: 0.5; color: "#FFFFFF" }
+                                        GradientStop { position: 1.0; color: "transparent" }
+                                    }
+                                    x: Math.max(0, progressFill.width - width)
+                                    Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                                 }
                             }
                         }
@@ -1077,9 +1166,11 @@ Rectangle {
 
             var response = normalizedResponseFrame(frame)
             if (target === "editor") {
+                stopResponseTimeout(target)
                 root.editorResponseFrame = response
                 root.editorResponseStatus = response.crcValid === false ? "已收到回包，CRC异常" : "已收到回包"
             } else if (target === "quick") {
+                stopResponseTimeout(target)
                 root.quickResponseFrame = response
                 root.quickResponseStatus = response.crcValid === false ? "已收到快捷回包，CRC异常" : "已收到快捷回包"
             }
@@ -1200,22 +1291,67 @@ Rectangle {
     function normalizedResponseFrame(frame) {
         return {
             timestamp: frame.timestamp || "",
-            sender: frame.sender || "",
-            receiver: frame.receiver || "",
+            sender: displayHexText(frame.sender || ""),
+            receiver: displayHexText(frame.receiver || ""),
             seq: frame.seq || "",
             type: frame.type || "",
-            cmd: frame.cmd || "",
-            cmdSet: frame.cmdSet || "",
-            cmdId: frame.cmdId || "",
+            cmd: displayHexText(frame.cmd || ""),
+            cmdSet: displayHexText(frame.cmdSet || ""),
+            cmdId: displayHexText(frame.cmdId || ""),
             len: frame.len || "",
             payloadLen: frame.payloadLen || "",
-            data: frame.data || "",
-            attr: frame.attr || frame.flags || "",
-            flags: frame.flags || "",
-            nextHeader: frame.nextHeader || "",
-            crc: frame.crc || "",
+            data: displayHexText(frame.data || ""),
+            attr: displayHexText(frame.attr || frame.flags || ""),
+            flags: displayHexText(frame.flags || ""),
+            nextHeader: displayHexText(frame.nextHeader || ""),
+            crc: displayHexText(frame.crc || ""),
             crcValid: frame.crcValid,
-            rawHex: frame.rawHex || ""
+            rawHex: displayHexText(frame.rawHex || "")
+        }
+    }
+
+    function startResponseTimeout(target) {
+        if (target === "editor")
+            editorResponseTimeout.restart()
+        else if (target === "quick")
+            quickResponseTimeout.restart()
+    }
+
+    function stopResponseTimeout(target) {
+        if (target === "editor")
+            editorResponseTimeout.stop()
+        else if (target === "quick")
+            quickResponseTimeout.stop()
+    }
+
+    function clearPendingTarget(target) {
+        if (!target || target.length <= 0)
+            return
+
+        var pending = root.responsePending
+        for (var key in pending) {
+            var queue = pending[key] || []
+            var kept = []
+            for (var i = 0; i < queue.length; i++) {
+                if (queue[i] !== target)
+                    kept.push(queue[i])
+            }
+            if (kept.length > 0)
+                pending[key] = kept
+            else
+                delete pending[key]
+        }
+        root.responsePending = pending
+    }
+
+    function handleResponseTimeout(target) {
+        clearPendingTarget(target)
+        if (target === "editor") {
+            root.editorResponseFrame = ({})
+            root.editorResponseStatus = "回包超时（3s）"
+        } else if (target === "quick") {
+            root.quickResponseFrame = ({})
+            root.quickResponseStatus = "快捷指令回包超时（3s）"
         }
     }
 
@@ -1240,6 +1376,7 @@ Rectangle {
         queue.push(target)
         pending[key] = queue
         root.responsePending = pending
+        startResponseTimeout(target)
     }
 
     function takeResponseTarget(frame) {
@@ -1263,12 +1400,12 @@ Rectangle {
     }
 
     function fillEditor(src, dst, seq, cmdset, cmdid, data) {
-        srcField.text = src
-        dstField.text = dst
+        srcField.text = displayHexText(src)
+        dstField.text = displayHexText(dst)
         seqField.text = seq
-        cmdsetField.text = cmdset
-        cmdidField.text = cmdid
-        dataField.text = data
+        cmdsetField.text = displayHexText(cmdset)
+        cmdidField.text = displayHexText(cmdid)
+        dataField.text = displayHexText(data)
     }
 
     function updatePreview() {
@@ -1317,6 +1454,8 @@ Rectangle {
                 setResponseWaiting(target, target === "quick" ? "等待快捷指令回包..." : "等待回包...")
                 rememberResponseRequest(target, srcHex, dstHex, seqStr, cmdSetHex, cmdIdHex)
             } else {
+                stopResponseTimeout(target)
+                clearPendingTarget(target)
                 setResponseWaiting(target, "ACK 帧不等待回包")
             }
         }
@@ -1615,59 +1754,62 @@ Rectangle {
         id: digitalSuccessCounter
         property int count: 0
         readonly property string digits: formatUpgradeSuccessCount(count)
-        implicitWidth: 72
+        implicitWidth: 86
         implicitHeight: 54
         radius: 8
-        color: "#162027"
-        border.color: "#2B4148"
+        color: "#182229"
+        border.color: count > 0 ? "#2B7A68" : "#30404A"
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.leftMargin: 5
-            anchors.rightMargin: 5
+            anchors.leftMargin: 6
+            anchors.rightMargin: 6
             anchors.topMargin: 5
-            anchors.bottomMargin: 4
-            spacing: 3
+            anchors.bottomMargin: 5
+            spacing: 4
 
             Text {
                 Layout.fillWidth: true
                 text: "成功次数"
-                color: "#9BAAB3"
+                color: count > 0 ? "#8CE8D1" : "#9BAAB3"
                 font.pixelSize: 9
                 font.weight: Font.Medium
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            RowLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 23
-                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-                spacing: 2
+                Layout.fillHeight: true
+                radius: 7
+                color: "#111A20"
+                border.color: count > 0 ? "#2F8B76" : "#27333C"
 
-                Item { Layout.fillWidth: true }
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 7
+                    anchors.rightMargin: 6
+                    spacing: 3
 
-                Text {
-                    id: successDigits
-                    text: digitalSuccessCounter.digits
-                    color: "#65E7C7"
-                    font.pixelSize: 21
-                    font.weight: Font.DemiBold
-                    font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
-                    horizontalAlignment: Text.AlignLeft
-                    verticalAlignment: Text.AlignVCenter
-                    Layout.alignment: Qt.AlignVCenter
+                    Text {
+                        id: successDigits
+                        Layout.fillWidth: true
+                        text: digitalSuccessCounter.digits
+                        color: count > 0 ? "#6AF1D1" : "#5EE0C2"
+                        font.pixelSize: 20
+                        font.weight: Font.DemiBold
+                        font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    Text {
+                        text: "次"
+                        color: "#8E99A6"
+                        font.pixelSize: 9
+                        font.weight: Font.Medium
+                        Layout.alignment: Qt.AlignVCenter
+                    }
                 }
-
-                Text {
-                    text: "次"
-                    color: "#8E99A6"
-                    font.pixelSize: 9
-                    font.weight: Font.Medium
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.topMargin: 4
-                }
-
-                Item { Layout.fillWidth: true }
             }
         }
     }

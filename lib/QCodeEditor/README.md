@@ -24,24 +24,20 @@ must not use a resource file with the same name.
 1. Qt Creator styles.
 
 ## Build
-It's a CMake-based library, so it can be used as a submodule (see the example).
-But here are the steps to build it as a static library (for external use for example).
+It's a CMake-based library, so it can be used as a static library.
+This repository keeps only the library files required by KPtools.
 
 1. Clone the repository: `git clone https://github.com/Megaxela/QCodeEditor`
 1. Go into the repository: `cd QCodeEditor`
 1. Create a build folder: `mkdir build`
 1. Go into the build folder: `cd build`
 1. Generate a build file for your compiler: `cmake ..`
-    1. If you need to build the example, specify `-DBUILD_EXAMPLE=On` on this step.
 1. Build the library: `cmake --build .`
 
-## Example
+## Usage Note
 
 By default, `QCodeEditor` uses the standard QtCreator theme. But you may specify
-your own by parsing it with `QSyntaxStyle`. The example uses [Dracula](https://draculatheme.com) theme.
-(See the example for more.) 
-
-<img src="https://github.com/Megaxela/QCodeEditor/blob/master/example/image/preview.png">
+your own by parsing it with `QSyntaxStyle`.
 
 ## LICENSE
 

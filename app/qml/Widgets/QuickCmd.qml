@@ -32,15 +32,19 @@ Rectangle {
         return value.length > 0 ? value : fallback
     }
 
+    function displayHexText(value) {
+        return String(value || "").replace(/0X/g, "0x")
+    }
+
     function openEditCommand(cardIndex, cmd) {
         root.editingIndex = cardIndex
         root.editError = ""
         editNameField.text = commandValue(cmd, "name", "")
-        editSrcField.text = commandValue(cmd, "src", "0x0001")
-        editDstField.text = commandValue(cmd, "dst", "0x0500")
+        editSrcField.text = displayHexText(commandValue(cmd, "src", "0x0001"))
+        editDstField.text = displayHexText(commandValue(cmd, "dst", "0x0500"))
         editSeqField.text = commandValue(cmd, "seq", "0001")
-        editSetField.text = commandValue(cmd, "cmdset", "0x00")
-        editIdField.text = commandValue(cmd, "cmdid", "0x00")
+        editSetField.text = displayHexText(commandValue(cmd, "cmdset", "0x00"))
+        editIdField.text = displayHexText(commandValue(cmd, "cmdid", "0x00"))
         editDataField.text = commandValue(cmd, "data", "")
         editPopup.open()
         Qt.callLater(function() {
@@ -216,11 +220,11 @@ Rectangle {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 3
-                        FieldPill { label: "Src"; value: modelData.src || "-"; Layout.preferredWidth: 58 }
-                        FieldPill { label: "Dst"; value: modelData.dst || "-"; Layout.preferredWidth: 58 }
+                        FieldPill { label: "Src"; value: root.displayHexText(modelData.src || "-"); Layout.preferredWidth: 58 }
+                        FieldPill { label: "Dst"; value: root.displayHexText(modelData.dst || "-"); Layout.preferredWidth: 58 }
                         FieldPill { label: "Seq"; value: modelData.seq || "-"; Layout.preferredWidth: 48 }
-                        FieldPill { label: "Set"; value: modelData.cmdset || "-"; Layout.preferredWidth: 42 }
-                        FieldPill { label: "ID"; value: modelData.cmdid || "-"; Layout.preferredWidth: 36 }
+                        FieldPill { label: "Set"; value: root.displayHexText(modelData.cmdset || "-"); Layout.preferredWidth: 42 }
+                        FieldPill { label: "ID"; value: root.displayHexText(modelData.cmdid || "-"); Layout.preferredWidth: 36 }
                         Item { Layout.fillWidth: true }
                     }
 
@@ -250,7 +254,7 @@ Rectangle {
                             Text {
                                 id: dataText
                                 Layout.fillWidth: true
-                                text: (modelData.data && modelData.data.length > 0) ? modelData.data : "无数据"
+                                text: (modelData.data && modelData.data.length > 0) ? root.displayHexText(modelData.data) : "无数据"
                                 color: modelData.data && modelData.data.length > 0 ? root.textSecondary : root.textMuted
                                 font.pixelSize: 8
                                 font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"

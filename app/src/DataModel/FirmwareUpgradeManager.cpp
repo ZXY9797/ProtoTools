@@ -58,6 +58,11 @@ QString runtimeName(int runtime)
                                          : QStringLiteral("app");
 }
 
+QString hexNumber(qulonglong value, int minDigits)
+{
+    return QStringLiteral("0x%1").arg(QStringLiteral("%1").arg(value, minDigits, 16, QChar('0')).toUpper());
+}
+
 QString canHelperScriptPath()
 {
     const QString appDir = QCoreApplication::applicationDirPath();
@@ -501,8 +506,8 @@ void FirmwareUpgradeManager::beginUpgradeOnce()
     queryDeviceInfo([this]() {
         m_runtime = m_deviceInfo.runtimeMode;
         if ((m_deviceInfo.supportedModes & m_requestedUpgradeMode) == 0) {
-            fail(QStringLiteral("device does not support requested upgrade mode 0x%1")
-                     .arg(m_requestedUpgradeMode, 2, 16, QChar('0')).toUpper());
+            fail(QStringLiteral("device does not support requested upgrade mode %1")
+                     .arg(hexNumber(m_requestedUpgradeMode, 2)));
             return;
         }
 
@@ -791,7 +796,7 @@ bool FirmwareUpgradeManager::validateFirmware(const QByteArray &firmware, QStrin
     const quint16 headerVersion = u16(firmware, 4);
     const quint16 headerSize = u16(firmware, 6);
     if (magic != FIRMWARE_MAGIC) {
-        if (errorMessage) *errorMessage = QStringLiteral("bad firmware magic: 0x%1").arg(magic, 8, 16, QChar('0')).toUpper();
+        if (errorMessage) *errorMessage = QStringLiteral("bad firmware magic: %1").arg(hexNumber(magic, 8));
         return false;
     }
     if (headerVersion != 1) {
@@ -913,15 +918,12 @@ void FirmwareUpgradeManager::queryDeviceInfo(Continuation next, FailureHandler o
         m_deviceInfo = parseDeviceInfoPayload(data);
         const QString module = m_deviceInfo.moduleName;
         const QString serialNumber = m_deviceInfo.serialNumber;
-        const QString moduleId = QStringLiteral("0x%1")
-            .arg(m_deviceInfo.moduleId, 8, 16, QChar('0')).toUpper();
-        const QString hardwareVersion = QStringLiteral("0x%1")
-            .arg(m_deviceInfo.hardwareVersion, 8, 16, QChar('0')).toUpper();
+        const QString moduleId = hexNumber(m_deviceInfo.moduleId, 8);
+        const QString hardwareVersion = hexNumber(m_deviceInfo.hardwareVersion, 8);
         const QString appVersion = formatVersion(m_deviceInfo.appVersion);
         const QString bootloaderVersion = formatVersion(m_deviceInfo.bootloaderVersion);
         const QString runtime = runtimeName(m_deviceInfo.runtimeMode);
-        const QString modes = QStringLiteral("0x%1")
-            .arg(m_deviceInfo.supportedModes, 2, 16, QChar('0')).toUpper();
+        const QString modes = hexNumber(m_deviceInfo.supportedModes, 2);
         setDeviceDetails(QStringLiteral("module=%1 sn=%2 module_id=%3 hw=%4 app=%5 bl=%6 runtime=%7 modes=%8")
                              .arg(module, serialNumber, moduleId, hardwareVersion, appVersion, bootloaderVersion, runtime, modes),
                          module,
@@ -1382,7 +1384,7 @@ QString FirmwareUpgradeManager::retName(quint8 ret)
     case 0x8A: return QStringLiteral("module_or_hw_mismatch");
     case 0x8B: return QStringLiteral("flash_erase_write_error");
     case 0xFF: return QStringLiteral("upgrade_unknown_error");
-    default: return QStringLiteral("unknown_0x%1").arg(ret, 2, 16, QChar('0')).toUpper();
+    default: return QStringLiteral("unknown_%1").arg(hexNumber(ret, 2));
     }
 }
 

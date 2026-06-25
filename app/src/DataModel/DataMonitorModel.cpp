@@ -53,7 +53,7 @@ QString normalizedSearchText(QString text)
 
 QString hexValue(qulonglong value, int minDigits)
 {
-    return QStringLiteral("0x%1").arg(value, minDigits, 16, QChar('0')).toUpper();
+    return QStringLiteral("0x%1").arg(QStringLiteral("%1").arg(value, minDigits, 16, QChar('0')).toUpper());
 }
 
 bool parseFrameNumber(const QString &text, qulonglong *value)
@@ -87,7 +87,9 @@ QString canonicalFieldName(QString field)
         return QStringLiteral("type");
     if (field == "seq")
         return QStringLiteral("seq");
-    if (field == "id")
+    if (field == "cmdset" || field == "cmd_set" || field == "set")
+        return QStringLiteral("cmdSet");
+    if (field == "cmdid" || field == "cmd_id" || field == "id")
         return QStringLiteral("cmdId");
     if (field == "data")
         return QStringLiteral("data");
@@ -97,12 +99,8 @@ QString canonicalFieldName(QString field)
 
 QString frameValueForKey(const QVariantMap &frame, const QString &key)
 {
-    if (key == QStringLiteral("len")) {
-        qulonglong value = 0;
-        if (parseFrameNumber(frame.value(QStringLiteral("len")).toString(), &value))
-            return hexValue(value, value <= 0xFF ? 2 : 4);
-        return {};
-    }
+    if (key == QStringLiteral("len"))
+        return frame.value(QStringLiteral("len")).toString();
 
     if (key == QStringLiteral("seq")) {
         qulonglong value = 0;
@@ -130,6 +128,7 @@ QStringList monitorFilterKeys()
         QStringLiteral("len"),
         QStringLiteral("type"),
         QStringLiteral("seq"),
+        QStringLiteral("cmdSet"),
         QStringLiteral("cmdId"),
         QStringLiteral("data"),
     };

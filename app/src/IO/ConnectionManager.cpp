@@ -178,17 +178,17 @@ QString ConnectionManager::connectedLinkName() const
     if (!isConnected()) return QStringLiteral("未连接");
     if (m_linkType == "UART") return m_uartUi->portName();
     if (m_linkType == "USB") {
+        const QString vid = QStringLiteral("%1").arg(m_usbUi->vendorId(), 4, 16, QLatin1Char('0')).toUpper();
+        const QString pid = QStringLiteral("%1").arg(m_usbUi->productId(), 4, 16, QLatin1Char('0')).toUpper();
         return QStringLiteral("USB VID 0x%1 PID 0x%2")
-            .arg(m_usbUi->vendorId(), 4, 16, QLatin1Char('0'))
-            .arg(m_usbUi->productId(), 4, 16, QLatin1Char('0'))
-            .toUpper();
+            .arg(vid, pid);
     }
     if (m_linkType == "CAN") {
+        const QString txId = QStringLiteral("%1").arg(m_canUi->txId(), 0, 16).toUpper();
+        const QString rxId = QStringLiteral("%1").arg(m_canUi->rxId(), 0, 16).toUpper();
         return QStringLiteral("CAN ch%1 TX 0x%2 RX 0x%3")
             .arg(m_canUi->channel())
-            .arg(m_canUi->txId(), 0, 16)
-            .arg(m_canUi->rxId(), 0, 16)
-            .toUpper();
+            .arg(txId, rxId);
     }
     if (m_linkType == "BLE") {
         int idx = m_bluetoothLEUi->deviceIndex();

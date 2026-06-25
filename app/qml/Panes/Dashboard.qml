@@ -25,7 +25,10 @@ Rectangle {
     readonly property color success: "#2DBA7F"
     readonly property color warning: "#E3A13B"
     readonly property color danger: "#E25D5D"
-    readonly property int fixedTableWidth: 498
+    readonly property int fixedTableWidth: 560
+    property string dataPreviewTitle: "Data"
+    property string dataPreviewMeta: ""
+    property string dataPreviewText: ""
 
     onTerminalActiveChanged: {
         linkManager.terminalMode = terminalActive
@@ -34,6 +37,86 @@ Rectangle {
     onLuaScriptPanelAvailableChanged: {
         if (!luaScriptPanelAvailable)
             luaScriptPanelOpen = false
+    }
+
+    Popup {
+        id: dataPreviewPopup
+        width: Math.min(root.width - 40, 720)
+        height: Math.min(root.height - 90, 320)
+        x: Math.max(20, (root.width - width) / 2)
+        y: Math.max(54, (root.height - height) / 2)
+        modal: false
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        padding: 0
+        z: 1000
+
+        background: Rectangle {
+            radius: 8
+            color: root.surfaceRaised
+            border.color: root.outlineStrong
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 8
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                Text {
+                    text: root.dataPreviewTitle
+                    color: root.textPrimary
+                    font.pixelSize: 13
+                    font.weight: Font.DemiBold
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Text {
+                    text: root.dataPreviewMeta
+                    color: root.textMuted
+                    font.pixelSize: 10
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                MonitorButton {
+                    text: "关闭"
+                    tone: root.textSecondary
+                    Layout.preferredWidth: 58
+                    onClicked: dataPreviewPopup.close()
+                }
+            }
+
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+                background: Rectangle {
+                    radius: 6
+                    color: root.surfaceSoft
+                    border.color: root.outline
+                }
+
+                TextArea {
+                    text: root.dataPreviewText
+                    readOnly: true
+                    selectByMouse: true
+                    wrapMode: TextEdit.WrapAnywhere
+                    color: root.textPrimary
+                    selectedTextColor: "#08121B"
+                    selectionColor: root.accent
+                    font.pixelSize: 12
+                    font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
+                    background: null
+                }
+            }
+        }
     }
 
     ColumnLayout {
@@ -121,7 +204,7 @@ Rectangle {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 110
                         Layout.preferredHeight: 28
-                        placeholderText: "示例: Src:0x0101 && ID:*01 || Data:*AA*"
+                        placeholderText: "示例: Src:0x0101 && Len:24 || Data:*AA*"
                         placeholderTextColor: textMuted
                         color: textPrimary
                         selectionColor: accent
@@ -176,16 +259,16 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.leftMargin: 6
                                 spacing: 0
-                                HeaderCell { text: "#"; width: 30 }
-                                HeaderCell { text: "时间"; width: 76 }
-                                HeaderCell { text: "方向"; width: 42 }
-                                HeaderCell { text: "Src"; width: 42 }
-                                HeaderCell { text: "Dst"; width: 42 }
-                                HeaderCell { text: "Len"; width: 30 }
-                                HeaderCell { text: "Type"; width: 32 }
+                                HeaderCell { text: "#"; width: 24 }
+                                HeaderCell { text: "时间"; width: 96 }
+                                HeaderCell { text: "方向"; width: 32 }
+                                HeaderCell { text: "Src"; width: 54 }
+                                HeaderCell { text: "Dst"; width: 54 }
+                                HeaderCell { text: "Len"; width: 28 }
+                                HeaderCell { text: "Type"; width: 40 }
                                 HeaderCell { text: "Seq"; width: 34 }
-                                HeaderCell { text: "Set"; width: 40 }
-                                HeaderCell { text: "ID"; width: 40 }
+                                HeaderCell { text: "CmdSet"; width: 56 }
+                                HeaderCell { text: "CmdID"; width: 52 }
                                 HeaderCell { text: "Data"; width: dataColumnWidth(tableList.width) }
                                 HeaderCell { text: "CRC8"; width: 42 }
                                 HeaderCell { text: "CRC16"; width: 48 }
@@ -231,38 +314,51 @@ Rectangle {
 
                             delegate: Rectangle {
                                 width: tableList.width
-                                height: 25
+                                height: 27
                                 color: monitorRowColor(model.rowColor, index, rowMouse.containsMouse, ListView.isCurrentItem)
                                 property string customTextColor: model.textColor || ""
-
-                                Row {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 6
-                                    spacing: 0
-                                    TableCell { text: (index + 1).toString(); width: 30; color: monitorTextColor(customTextColor, textMuted) }
-                                    TableCell { text: model.timestamp || ""; width: 76; color: monitorTextColor(customTextColor, textSecondary) }
-                                    TableCell {
-                                        text: model.direction || ""
-                                        width: 42
-                                        color: monitorTextColor(customTextColor, (model.direction === "→" || model.direction === "TX") ? warning : success)
-                                    }
-                                    TableCell { text: model.sender || ""; width: 42; color: monitorTextColor(customTextColor, "#8CC8FF") }
-                                    TableCell { text: model.receiver || ""; width: 42; color: monitorTextColor(customTextColor, "#8CC8FF") }
-                                    TableCell { text: model.len || ""; width: 30; color: monitorTextColor(customTextColor, "#A7D38C") }
-                                    TableCell { text: model.type || ""; width: 32; color: monitorTextColor(customTextColor, "#E8CC73") }
-                                    TableCell { text: model.seq || ""; width: 34; color: monitorTextColor(customTextColor, "#7DB5FF") }
-                                    TableCell { text: model.cmdSet || ""; width: 40; color: monitorTextColor(customTextColor, "#D6A4E8") }
-                                    TableCell { text: model.cmdId || ""; width: 40; color: monitorTextColor(customTextColor, "#E8CC73") }
-                                    TableCell { text: model.data || ""; width: dataColumnWidth(tableList.width); color: monitorTextColor(customTextColor, textPrimary); elide: Text.ElideRight }
-                                    TableCell { text: model.crc8 || ""; width: 42; color: monitorTextColor(customTextColor, "#4EC9B0") }
-                                    TableCell { text: model.crc || ""; width: 48; color: monitorTextColor(customTextColor, "#7DB5FF") }
-                                }
 
                                 MouseArea {
                                     id: rowMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     onClicked: tableList.currentIndex = index
+                                }
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 6
+                                    spacing: 0
+                                    TableCell { text: (index + 1).toString(); width: 24; color: monitorTextColor(customTextColor, textMuted) }
+                                    TableCell { text: model.timestamp || ""; width: 96; color: monitorTextColor(customTextColor, textSecondary) }
+                                    TableCell {
+                                        text: model.direction || ""
+                                        width: 32
+                                        color: monitorTextColor(customTextColor, (model.direction === "→" || model.direction === "TX") ? warning : success)
+                                    }
+                                    TableCell { text: displayHexText(model.sender || ""); width: 54; color: monitorTextColor(customTextColor, "#8CC8FF") }
+                                    TableCell { text: displayHexText(model.receiver || ""); width: 54; color: monitorTextColor(customTextColor, "#8CC8FF") }
+                                    TableCell { text: model.len || ""; width: 28; color: monitorTextColor(customTextColor, "#A7D38C") }
+                                    TableCell { text: model.type || ""; width: 40; color: monitorTextColor(customTextColor, "#E8CC73") }
+                                    TableCell { text: model.seq || ""; width: 34; color: monitorTextColor(customTextColor, "#7DB5FF") }
+                                    TableCell { text: displayHexText(model.cmdSet || ""); width: 56; color: monitorTextColor(customTextColor, "#D6A4E8") }
+                                    TableCell { text: displayHexText(model.cmdId || ""); width: 52; color: monitorTextColor(customTextColor, "#E8CC73") }
+                                    DataCell {
+                                        text: displayHexText(model.data || "")
+                                        width: dataColumnWidth(tableList.width)
+                                        color: monitorTextColor(customTextColor, textPrimary)
+                                        onClicked: root.openDataPreview({
+                                            timestamp: model.timestamp || "",
+                                            sender: model.sender || "",
+                                            receiver: model.receiver || "",
+                                            seq: model.seq || "",
+                                            cmdSet: model.cmdSet || "",
+                                            cmdId: model.cmdId || "",
+                                            data: model.data || ""
+                                        })
+                                    }
+                                    TableCell { text: displayHexText(model.crc8 || ""); width: 42; color: monitorTextColor(customTextColor, "#4EC9B0") }
+                                    TableCell { text: displayHexText(model.crc || ""); width: 48; color: monitorTextColor(customTextColor, "#7DB5FF") }
                                 }
                             }
                         }
@@ -296,6 +392,29 @@ Rectangle {
     }
 
     Component { id: terminalComponent; Console {} }
+
+    function displayHexText(value) {
+        return String(value || "").replace(/0X/g, "0x")
+    }
+
+    function openDataPreview(frame) {
+        var data = displayHexText(frame && frame.data ? frame.data : "")
+        if (data.length <= 0)
+            return
+
+        var src = displayHexText(frame.sender || "-")
+        var dst = displayHexText(frame.receiver || "-")
+        var set = displayHexText(frame.cmdSet || "-")
+        var id = displayHexText(frame.cmdId || "-")
+        root.dataPreviewTitle = "Data"
+        root.dataPreviewMeta = (frame.timestamp || "-")
+                + "  " + src + " -> " + dst
+                + "  Seq " + (frame.seq || "-")
+                + "  CmdSet " + set
+                + "  CmdID " + id
+        root.dataPreviewText = data
+        dataPreviewPopup.open()
+    }
 
     function dataColumnWidth(totalWidth) {
         return Math.max(70, totalWidth - fixedTableWidth - 18)
@@ -427,22 +546,81 @@ Rectangle {
     }
 
     component HeaderCell: Text {
-        color: root.textSecondary
+        color: "#AFC0D0"
         font.pixelSize: 12
-        font.weight: Font.Medium
+        font.weight: Font.DemiBold
         verticalAlignment: Text.AlignVCenter
-        leftPadding: 5
+        leftPadding: 2
+        rightPadding: 4
         height: parent ? parent.height : 28
         elide: Text.ElideRight
     }
 
     component TableCell: Text {
-        font.pixelSize: 12
+        property int cellPadding: 3
+        font.pixelSize: 13
         font.family: "Consolas"
         verticalAlignment: Text.AlignVCenter
-        leftPadding: 5
-        height: parent ? parent.height : 25
+        leftPadding: cellPadding
+        height: parent ? parent.height : 27
         elide: Text.ElideRight
+    }
+
+    component DataCell: Item {
+        id: dataCell
+        property string text: ""
+        property color color: root.textPrimary
+        signal clicked()
+
+        height: parent ? parent.height : 27
+        clip: true
+
+        function byteTokens(value) {
+            var clean = String(value || "").trim()
+            if (clean.length <= 0)
+                return []
+            return clean.split(/\s+/)
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.leftMargin: 1
+            anchors.rightMargin: 2
+            anchors.topMargin: 3
+            anchors.bottomMargin: 3
+            radius: 4
+            color: dataMouse.containsMouse && dataCell.text.length > 0 ? "#1F2E3D" : "transparent"
+            border.color: dataMouse.containsMouse && dataCell.text.length > 0 ? root.outlineStrong : "transparent"
+        }
+
+        Row {
+            anchors.fill: parent
+            anchors.leftMargin: 3
+            anchors.rightMargin: 3
+            spacing: 2
+            clip: true
+
+            Repeater {
+                model: dataCell.byteTokens(dataCell.text)
+                Text {
+                    text: modelData
+                    color: dataCell.color
+                    font.pixelSize: 13
+                    font.family: "Consolas"
+                    height: dataCell.height
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+        }
+
+        MouseArea {
+            id: dataMouse
+            anchors.fill: parent
+            enabled: dataCell.text.length > 0
+            hoverEnabled: enabled
+            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: dataCell.clicked()
+        }
     }
 
     component MetricPlotCard: Rectangle {

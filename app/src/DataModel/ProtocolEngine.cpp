@@ -20,12 +20,12 @@ void appendLe16(QByteArray &data, quint16 value)
 
 QString hexByte(quint8 value)
 {
-    return QStringLiteral("0x%1").arg(value, 2, 16, QChar('0')).toUpper();
+    return QStringLiteral("0x%1").arg(QStringLiteral("%1").arg(value, 2, 16, QChar('0')).toUpper());
 }
 
 QString hexWord(quint16 value)
 {
-    return QStringLiteral("0x%1").arg(value, 4, 16, QChar('0')).toUpper();
+    return QStringLiteral("0x%1").arg(QStringLiteral("%1").arg(value, 4, 16, QChar('0')).toUpper());
 }
 
 } // namespace

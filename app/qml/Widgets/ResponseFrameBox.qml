@@ -33,7 +33,7 @@ Rectangle {
         if (!root.frame || root.frame[key] === undefined || root.frame[key] === null)
             return fallback
         var value = root.frame[key].toString()
-        return value.length > 0 ? value : fallback
+        return value.length > 0 ? value.replace(/0X/g, "0x") : fallback
     }
 
     function byteCount(hex) {

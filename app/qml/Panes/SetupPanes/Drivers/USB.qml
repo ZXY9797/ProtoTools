@@ -25,12 +25,16 @@ Item {
         return "0x" + s
     }
 
+    function normalizeHexPrefix(value) {
+        return String(value || "").replace(/0X/g, "0x")
+    }
+
     Component.onCompleted: {
-        vidField.text = settingsManager.loadValue("setup.usb.vendorId", "0x0000")
-        pidField.text = settingsManager.loadValue("setup.usb.productId", "0x0000")
+        vidField.text = normalizeHexPrefix(settingsManager.loadValue("setup.usb.vendorId", "0x0000"))
+        pidField.text = normalizeHexPrefix(settingsManager.loadValue("setup.usb.productId", "0x0000"))
         ifaceField.text = settingsManager.loadValue("setup.usb.interfaceNumber", 0).toString()
-        inEpField.text = settingsManager.loadValue("setup.usb.bulkInEndpoint", "0x81")
-        outEpField.text = settingsManager.loadValue("setup.usb.bulkOutEndpoint", "0x01")
+        inEpField.text = normalizeHexPrefix(settingsManager.loadValue("setup.usb.bulkInEndpoint", "0x81"))
+        outEpField.text = normalizeHexPrefix(settingsManager.loadValue("setup.usb.bulkOutEndpoint", "0x01"))
         readLenField.text = settingsManager.loadValue("setup.usb.readPacketSize", 512).toString()
 
         usbDriver.vendorId = parseNumber(vidField.text, 0)

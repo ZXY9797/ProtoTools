@@ -37,7 +37,12 @@ int clampPositive(int value, int fallback, int maxValue)
 
 QString hex4(int value)
 {
-    return QStringLiteral("0x%1").arg(value & 0xFFFF, 4, 16, QLatin1Char('0')).toUpper();
+    return QStringLiteral("0x%1").arg(QStringLiteral("%1").arg(value & 0xFFFF, 4, 16, QLatin1Char('0')).toUpper());
+}
+
+QString hex2(int value)
+{
+    return QStringLiteral("0x%1").arg(QStringLiteral("%1").arg(clampByte(value), 2, 16, QLatin1Char('0')).toUpper());
 }
 
 #ifdef Q_OS_WIN
@@ -223,9 +228,9 @@ QList<IO::DriverProperty> UsbBulk::driverProperties() const
         {.key = "interfaceNumber", .label = "Interface", .description = "USB interface number",
          .type = IO::DriverProperty::IntField, .value = m_interfaceNumber, .min = 0, .max = 32},
         {.key = "bulkInEndpoint", .label = "Bulk IN", .description = "Bulk IN endpoint address",
-         .type = IO::DriverProperty::HexText, .value = QStringLiteral("0x%1").arg(m_bulkInEndpoint, 2, 16, QLatin1Char('0')).toUpper()},
+         .type = IO::DriverProperty::HexText, .value = hex2(m_bulkInEndpoint)},
         {.key = "bulkOutEndpoint", .label = "Bulk OUT", .description = "Bulk OUT endpoint address",
-         .type = IO::DriverProperty::HexText, .value = QStringLiteral("0x%1").arg(m_bulkOutEndpoint, 2, 16, QLatin1Char('0')).toUpper()},
+         .type = IO::DriverProperty::HexText, .value = hex2(m_bulkOutEndpoint)},
         {.key = "readPacketSize", .label = "Read Len", .description = "Maximum bulk read size",
          .type = IO::DriverProperty::IntField, .value = m_readPacketSize, .min = 64, .max = 65536},
         {.key = "timeoutMs", .label = "Timeout", .description = "Bulk transfer timeout in ms",

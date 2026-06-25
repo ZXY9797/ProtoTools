@@ -25,6 +25,10 @@ Item {
         return "0x" + Number(value).toString(16).toUpperCase()
     }
 
+    function normalizeHexPrefix(value) {
+        return String(value || "").replace(/0X/g, "0x")
+    }
+
     function bitrateLabel(value) {
         return value >= 1000000 ? (value / 1000000) + "M" : (value / 1000) + "K"
     }
@@ -51,8 +55,8 @@ Item {
     Component.onCompleted: {
         deviceIndexField.text = settingsManager.loadValue("setup.can.deviceIndex", 0).toString()
         channelField.text = settingsManager.loadValue("setup.can.channel", 0).toString()
-        txIdField.text = settingsManager.loadValue("setup.can.txId", "0x100")
-        rxIdField.text = settingsManager.loadValue("setup.can.rxId", "0x200")
+        txIdField.text = normalizeHexPrefix(settingsManager.loadValue("setup.can.txId", "0x100"))
+        rxIdField.text = normalizeHexPrefix(settingsManager.loadValue("setup.can.rxId", "0x200"))
         formatCombo.currentIndex = Math.max(0, Math.min(formatCombo.count - 1, settingsManager.loadValue("setup.can.frameFormat", 1)))
         arbBitrateCombo.currentIndex = bitrateIndex(arbitrationBitrates, settingsManager.loadValue("setup.can.arbitrationBitrate", 1000000), 4)
         dataBitrateCombo.currentIndex = bitrateIndex(dataBitrates, settingsManager.loadValue("setup.can.dataBitrate", 1000000), 0)
