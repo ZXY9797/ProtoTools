@@ -10,7 +10,7 @@ What this script does:
    - Qt runtime and QML plugins: deployed by windeployqt
    - MSVC 2022 runtime: copied from Visual Studio redist directory
    - MSVC 2013 runtime: required by ZLG zlgcan.dll
-   - ZLG CAN DLL and sibling kerneldlls directory: required for CAN/CAN FD link
+   - ZLG CAN DLL and sibling x64 kerneldlls: required for CAN/CAN FD link
 5. Wrap the portable directory into one self-extracting KPtools.exe with
    PyInstaller.
 6. Delete temporary build/deploy directories and leave only dist/KPtools.exe.
@@ -197,7 +197,23 @@ function Copy-ZlgRuntime([string]$ZlgDllPath, [string]$TargetDir) {
     # kerneldlls directory at OpenDevice time, for example USBCANFD.dll.
     $kernelDlls = Join-Path (Split-Path -Parent $ZlgDllPath) "kerneldlls"
     if (Test-Path -LiteralPath $kernelDlls -PathType Container) {
-        Copy-Item -LiteralPath $kernelDlls -Destination (Join-Path $TargetDir "kerneldlls") -Recurse -Force
+        $targetKernelDlls = Join-Path $TargetDir "kerneldlls"
+        New-Item -ItemType Directory -Path $targetKernelDlls -Force | Out-Null
+        Get-ChildItem -LiteralPath $kernelDlls -Force | ForEach-Object {
+            $targetPath = Join-Path $targetKernelDlls $_.Name
+            if ($_.PSIsContainer) {
+                Copy-Item -LiteralPath $_.FullName -Destination $targetPath -Recurse -Force
+            } elseif ($_.Extension -ieq ".dll") {
+                $machine = Get-PeMachine $_.FullName
+                if ($machine -eq "x64") {
+                    Copy-Item -LiteralPath $_.FullName -Destination $targetPath -Force
+                } else {
+                    Write-Warning "Skipping non-x64 ZLG kernel DLL ($machine): $($_.FullName)"
+                }
+            } else {
+                Copy-Item -LiteralPath $_.FullName -Destination $targetPath -Force
+            }
+        }
     } else {
         Write-Warning "ZLG kerneldlls directory was not found next to $ZlgDllPath. CAN/CAN FD may fail at OpenDevice on target PCs."
     }
@@ -362,7 +378,7 @@ Copy-Item -LiteralPath (Join-Path $BuildDir "bridge-dist\zlg_can_bridge.exe") -D
 if (-not $SkipZlgCan) {
     $resolvedZlgDll = Find-ZlgDll
     if (-not $resolvedZlgDll) {
-        throw "zlgcan.dll was not found. Pass -ZlgDll <path> or use -SkipZlgCan for a package without ZLG CAN support."
+        throw "zlgcan.dll was not found. Install the ZLG x64 runtime on the build machine, pass -ZlgDll <path>, or use -SkipZlgCan for a package without bundled ZLG runtime."
     }
     Copy-ZlgRuntime $resolvedZlgDll $PortableDir
 }

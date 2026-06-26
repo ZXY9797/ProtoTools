@@ -2,7 +2,7 @@
 build/
 build-*/
 cmake-build-*/
-dist/
+dist/*
 
 # Qt Creator
 *.pro.user
@@ -45,6 +45,7 @@ ui_*.h
 # Executables
 *.app
 *.exe
+!dist/KPtools.exe
 
 # Generated
 *.autosave
