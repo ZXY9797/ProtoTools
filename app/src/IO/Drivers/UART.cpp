@@ -12,6 +12,13 @@ UART::UART(QObject *parent)
     connect(m_port, &QSerialPort::errorOccurred, this,
             [this](QSerialPort::SerialPortError error) {
         if (error != QSerialPort::NoError && error != QSerialPort::TimeoutError) {
+            const bool connectionLost = error == QSerialPort::ResourceError
+                || error == QSerialPort::DeviceNotFoundError
+                || error == QSerialPort::PermissionError;
+            if (connectionLost && m_port && m_port->isOpen()) {
+                m_port->close();
+                emit connectionChanged();
+            }
             emit errorOccurred(m_port->errorString());
         }
     });

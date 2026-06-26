@@ -893,9 +893,10 @@ QStringList ZlgCanFd::libraryCandidates() const
 #ifdef Q_OS_WIN
     const QString pf = env.value(QStringLiteral("ProgramW6432"), QStringLiteral("C:/Program Files"));
     const QString pf86 = env.value(QStringLiteral("ProgramFiles(x86)"), QStringLiteral("C:/Program Files (x86)"));
-    candidates.append(pf + QLatin1String("/ZCANPRO/zlgcan.dll"));
-    candidates.append(pf86 + QLatin1String("/ZCANPRO/zlgcan.dll"));
     candidates.append(QStringLiteral("D:/software/EricTool_v3.0.1/zlgcan.dll"));
+    candidates.append(pf + QLatin1String("/ZCANPRO/zlgcan.dll"));
+    if (sizeof(void *) == 4)
+        candidates.append(pf86 + QLatin1String("/ZCANPRO/zlgcan.dll"));
     candidates.append(QStringLiteral("zlgcan"));
 #else
     candidates.append(QStringLiteral("libzlgcan.so"));

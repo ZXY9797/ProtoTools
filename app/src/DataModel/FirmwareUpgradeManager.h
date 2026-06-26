@@ -131,6 +131,7 @@ private:
                           const QString &modes,
                           const QString &rawResponse);
     void fail(const QString &message);
+    void setUpgradeConnectionHold(bool enabled);
 
     void resetTransferState();
     void beginUpgradeOnce();
@@ -145,11 +146,12 @@ private:
                  const QByteArray &data,
                  const QString &context,
                  ResponseHandler onSuccess,
-                 FailureHandler onFailure = {});
+                 FailureHandler onFailure = {},
+                 int retriesOverride = -1);
     void sendPendingRequest();
     void clearPendingRequest();
 
-    void queryDeviceInfo(Continuation next, FailureHandler onFailure = {});
+    void queryDeviceInfo(Continuation next, FailureHandler onFailure = {}, int retriesOverride = -1);
     void queryRuntime(std::function<void(int)> next, FailureHandler onFailure = {});
     void requestEnterUpgrade(quint8 requestedMode, std::function<void(const EnterUpgradeInfo &)> next);
     void reboot(int mode, Continuation next);

@@ -25,7 +25,9 @@ Rectangle {
     readonly property color success: "#2DBA7F"
     readonly property color warning: "#E3A13B"
     readonly property color danger: "#E25D5D"
-    readonly property int fixedTableWidth: 560
+    readonly property int rowNumberColumnWidth: 48
+    readonly property int seqColumnWidth: 46
+    readonly property int fixedTableWidth: 554
     property string dataPreviewTitle: "Data"
     property string dataPreviewMeta: ""
     property string dataPreviewText: ""
@@ -37,6 +39,22 @@ Rectangle {
     onLuaScriptPanelAvailableChanged: {
         if (!luaScriptPanelAvailable)
             luaScriptPanelOpen = false
+    }
+
+    Connections {
+        target: monitorModel
+        function onExportFinished(path) {
+            root.dataPreviewTitle = "导出完成"
+            root.dataPreviewMeta = path
+            root.dataPreviewText = path
+            dataPreviewPopup.open()
+        }
+        function onExportFailed(message) {
+            root.dataPreviewTitle = "导出失败"
+            root.dataPreviewMeta = ""
+            root.dataPreviewText = message
+            dataPreviewPopup.open()
+        }
     }
 
     Popup {
@@ -197,6 +215,8 @@ Rectangle {
                     MonitorButton {
                         text: "导出"
                         tone: root.textSecondary
+                        enabled: monitorModel.count > 0
+                        onClicked: monitorModel.exportRawHex(linkManager.linkType, root.currentLinkExportInfo())
                     }
 
                     TextField {
@@ -259,18 +279,17 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.leftMargin: 6
                                 spacing: 0
-                                HeaderCell { text: "#"; width: 24 }
+                                HeaderCell { text: "#"; width: rowNumberColumnWidth }
                                 HeaderCell { text: "时间"; width: 96 }
                                 HeaderCell { text: "方向"; width: 32 }
                                 HeaderCell { text: "Src"; width: 54 }
                                 HeaderCell { text: "Dst"; width: 54 }
                                 HeaderCell { text: "Len"; width: 28 }
                                 HeaderCell { text: "Type"; width: 40 }
-                                HeaderCell { text: "Seq"; width: 34 }
+                                HeaderCell { text: "Seq"; width: seqColumnWidth }
                                 HeaderCell { text: "CmdSet"; width: 56 }
                                 HeaderCell { text: "CmdID"; width: 52 }
                                 HeaderCell { text: "Data"; width: dataColumnWidth(tableList.width) }
-                                HeaderCell { text: "CRC8"; width: 42 }
                                 HeaderCell { text: "CRC16"; width: 48 }
                             }
                         }
@@ -329,7 +348,7 @@ Rectangle {
                                     anchors.fill: parent
                                     anchors.leftMargin: 6
                                     spacing: 0
-                                    TableCell { text: (index + 1).toString(); width: 24; color: monitorTextColor(customTextColor, textMuted) }
+                                    TableCell { text: monitorRowNumber(index); width: rowNumberColumnWidth; color: monitorTextColor(customTextColor, textMuted) }
                                     TableCell { text: model.timestamp || ""; width: 96; color: monitorTextColor(customTextColor, textSecondary) }
                                     TableCell {
                                         text: model.direction || ""
@@ -340,7 +359,7 @@ Rectangle {
                                     TableCell { text: displayHexText(model.receiver || ""); width: 54; color: monitorTextColor(customTextColor, "#8CC8FF") }
                                     TableCell { text: model.len || ""; width: 28; color: monitorTextColor(customTextColor, "#A7D38C") }
                                     TableCell { text: model.type || ""; width: 40; color: monitorTextColor(customTextColor, "#E8CC73") }
-                                    TableCell { text: model.seq || ""; width: 34; color: monitorTextColor(customTextColor, "#7DB5FF") }
+                                    TableCell { text: model.seq || ""; width: seqColumnWidth; color: monitorTextColor(customTextColor, "#7DB5FF") }
                                     TableCell { text: displayHexText(model.cmdSet || ""); width: 56; color: monitorTextColor(customTextColor, "#D6A4E8") }
                                     TableCell { text: displayHexText(model.cmdId || ""); width: 52; color: monitorTextColor(customTextColor, "#E8CC73") }
                                     DataCell {
@@ -357,7 +376,6 @@ Rectangle {
                                             data: model.data || ""
                                         })
                                     }
-                                    TableCell { text: displayHexText(model.crc8 || ""); width: 42; color: monitorTextColor(customTextColor, "#4EC9B0") }
                                     TableCell { text: displayHexText(model.crc || ""); width: 48; color: monitorTextColor(customTextColor, "#7DB5FF") }
                                 }
                             }
@@ -395,6 +413,38 @@ Rectangle {
 
     function displayHexText(value) {
         return String(value || "").replace(/0X/g, "0x")
+    }
+
+    function monitorRowNumber(rowIndex) {
+        var value = Number(rowIndex || 0) % 1000
+        if (value < 0)
+            value = 0
+        var text = value.toString()
+        while (text.length < 3)
+            text = "0" + text
+        return text
+    }
+
+    function exportHex(value, minDigits) {
+        var text = Number(value || 0).toString(16).toUpperCase()
+        while (text.length < minDigits)
+            text = "0" + text
+        return "0x" + text
+    }
+
+    function currentLinkExportInfo() {
+        var type = String(linkManager.linkType || "LINK")
+        if (type === "UART")
+            return String(uartDriver.portName || "UART") + "_" + String(uartDriver.baudRate || "")
+        if (type === "USB")
+            return "VID" + exportHex(usbDriver.vendorId, 4) + "_PID" + exportHex(usbDriver.productId, 4)
+        if (type === "CAN")
+            return "CH" + String(canDriver.channel || 0)
+                    + "_TX" + exportHex(canDriver.txId, 0)
+                    + "_RX" + exportHex(canDriver.rxId, 0)
+        if (type === "BLE")
+            return String(linkManager.connectedLinkName || "BLE")
+        return type
     }
 
     function openDataPreview(frame) {
@@ -639,7 +689,19 @@ Rectangle {
         property real visibleEndTime: 0
         property string visibleStartText: ""
         property string visibleEndText: ""
+        property string filterStatus: "等待协议监控数据"
+        property bool filterValid: false
+        property int matchedFrameCount: 0
+        property real lastPlotRefreshMs: 0
+        property bool plotConfigPaused: false
+        property string protocolChoiceSignature: ""
+        property string selectedProtocolKey: ""
+        property int selectedProtocolIndex: -1
+        readonly property int maxPlotFps: 60
+        readonly property real minPlotIntervalMs: 1000 / maxPlotFps
+        readonly property int plotTimeDivisions: 4
         readonly property int maxCurves: 9
+        readonly property var secondsPerDivOptions: [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]
         readonly property var dataTypeOptions: ["uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64", "float LE", "double LE"]
         readonly property var curvePalette: ["#2F81F7", "#2DBA7F", "#E3A13B", "#C586C0", "#4FC3F7", "#F06292", "#A7D38C", "#FF8A65", "#B39DDB"]
 
@@ -647,23 +709,44 @@ Rectangle {
             id: curveModel
         }
 
+        ListModel {
+            id: protocolChoiceModel
+        }
+
         Timer {
             id: plotRefreshTimer
-            interval: 160
+            interval: 16
             repeat: false
             onTriggered: card.rebuildSamples()
         }
 
+        Timer {
+            id: plotConfigRefreshTimer
+            interval: 450
+            repeat: false
+            onTriggered: {
+                plotRefreshTimer.stop()
+                card.resumePlotRefresh()
+            }
+        }
+
         Connections {
             target: monitorModel
-            function onCountChanged() { plotRefreshTimer.restart() }
-            function onFilterTextChanged() { plotRefreshTimer.restart() }
+            function onCountChanged() { card.schedulePlotRefresh(false) }
+        }
+
+        Connections {
+            target: root
+            function onMonitorTabIndexChanged() {
+                if (root.monitorTabIndex === 2)
+                    card.schedulePlotRefresh(true)
+            }
         }
 
         Component.onCompleted: {
             if (curveModel.count === 0)
-                card.appendCurve()
-            plotRefreshTimer.restart()
+                card.appendDefaultCurves()
+            card.schedulePlotRefresh(true)
         }
 
         ColumnLayout {
@@ -708,41 +791,88 @@ Rectangle {
                     onClicked: card.appendCurve()
                 }
 
-                CompactLabel { text: "时间" }
+                CompactLabel { text: "s/div" }
                 Slider {
-                    id: timeZoomSlider
-                    Layout.preferredWidth: 132
+                    id: secondsPerDivSlider
+                    Layout.preferredWidth: 156
                     Layout.preferredHeight: 28
-                    from: 1
-                    to: 20
-                    value: 1
+                    from: 0
+                    to: card.secondsPerDivOptions.length - 1
+                    value: 6
                     stepSize: 1
                     snapMode: Slider.SnapAlways
-                    onValueChanged: plotRefreshTimer.restart()
+                    onValueChanged: card.refreshViewportOnly()
                 }
 
                 Text {
-                    text: card.zoomLabel(timeZoomSlider.value)
+                    text: card.secondsPerDivLabel(card.currentSecondsPerDiv())
                     color: textSecondary
                     font.pixelSize: 11
                     font.family: "Consolas"
-                    Layout.preferredWidth: 38
+                    Layout.preferredWidth: 72
                     horizontalAlignment: Text.AlignRight
                     verticalAlignment: Text.AlignVCenter
                 }
+            }
 
-                CompactLabel { text: "倍率" }
-                TextField {
-                    id: scaleField
-                    Layout.preferredWidth: 54
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 28
+                spacing: 6
+
+                CompactLabel {
+                    text: "协议"
+                    Layout.preferredWidth: 32
+                }
+
+                ComboBox {
+                    id: protocolSelector
+                    Layout.preferredWidth: 170
                     Layout.preferredHeight: 28
-                    text: "1"
-                    color: textPrimary
+                    enabled: protocolChoiceModel.count > 0
+                    model: protocolChoiceModel
+                    textRole: "label"
+                    currentIndex: card.selectedProtocolIndex
                     font.pixelSize: 11
-                    horizontalAlignment: Text.AlignHCenter
-                    selectByMouse: true
-                    onTextChanged: plotRefreshTimer.restart()
-                    background: Rectangle { radius: 5; color: surfaceSoft; border.color: scaleField.activeFocus ? accent : outline }
+                    font.family: "Consolas"
+                    Connections {
+                        target: protocolSelector.popup
+                        function onVisibleChanged() {
+                            if (protocolSelector.popup.visible)
+                                card.beginPlotConfigPause()
+                            else if (card.plotConfigPaused)
+                                card.deferPlotRefresh()
+                        }
+                    }
+                    onActivated: function(index) {
+                        card.selectProtocol(index, true)
+                        card.deferPlotRefresh()
+                    }
+                    contentItem: Text {
+                        text: protocolSelector.enabled ? protocolSelector.displayText : "暂无协议"
+                        color: protocolSelector.enabled ? textPrimary : textMuted
+                        font: protocolSelector.font
+                        elide: Text.ElideRight
+                        verticalAlignment: Text.AlignVCenter
+                        leftPadding: 10
+                        rightPadding: 24
+                    }
+                    background: Rectangle {
+                        radius: 5
+                        color: surfaceSoft
+                        border.color: protocolSelector.activeFocus ? accent
+                                      : (protocolSelector.enabled ? outline : outlineStrong)
+                    }
+                }
+
+                Text {
+                    text: card.filterStatus
+                    color: !card.filterValid ? root.warning
+                         : (card.matchedFrameCount > 0 ? root.success : root.textMuted)
+                    font.pixelSize: 11
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    verticalAlignment: Text.AlignVCenter
                 }
             }
 
@@ -768,7 +898,7 @@ Rectangle {
                             onToggled: {
                                 if (curveModel.count > index && curveModel.get(index).hidden !== checked) {
                                     curveModel.setProperty(index, "hidden", checked)
-                                    plotRefreshTimer.restart()
+                                    card.deferPlotRefresh()
                                 }
                             }
                             indicator: Rectangle {
@@ -804,10 +934,16 @@ Rectangle {
                             to: 63
                             value: offset
                             editable: true
+                            onActiveFocusChanged: {
+                                if (activeFocus)
+                                    card.beginPlotConfigPause()
+                                else if (card.plotConfigPaused)
+                                    card.deferPlotRefresh()
+                            }
                             onValueChanged: {
                                 if (curveModel.count > index && curveModel.get(index).offset !== value) {
                                     curveModel.setProperty(index, "offset", value)
-                                    plotRefreshTimer.restart()
+                                    card.deferPlotRefresh()
                                 }
                             }
                         }
@@ -819,9 +955,20 @@ Rectangle {
                             model: card.dataTypeOptions
                             currentIndex: typeIndex
                             font.pixelSize: 11
+                            Connections {
+                                target: curveTypeCombo.popup
+                                function onVisibleChanged() {
+                                    if (curveTypeCombo.popup.visible)
+                                        card.beginPlotConfigPause()
+                                    else if (card.plotConfigPaused)
+                                        card.deferPlotRefresh()
+                                }
+                            }
                             onActivated: function(selectedIndex) {
-                                curveModel.setProperty(index, "typeIndex", selectedIndex)
-                                plotRefreshTimer.restart()
+                                if (curveModel.count > index && curveModel.get(index).typeIndex !== selectedIndex) {
+                                    curveModel.setProperty(index, "typeIndex", selectedIndex)
+                                    card.deferPlotRefresh()
+                                }
                             }
                             background: Rectangle { radius: 5; color: surfaceSoft; border.color: curveTypeCombo.activeFocus ? accent : outline }
                             contentItem: Text {
@@ -876,6 +1023,15 @@ Rectangle {
                         var h = height
                         ctx.fillStyle = "#0D131A"
                         ctx.fillRect(0, 0, w, h)
+
+                        if (card.plotConfigPaused) {
+                            ctx.fillStyle = root.textMuted
+                            ctx.font = "12px sans-serif"
+                            ctx.textAlign = "center"
+                            ctx.textBaseline = "middle"
+                            ctx.fillText("配置切换中，暂停绘制", w / 2, h / 2)
+                            return
+                        }
 
                         var left = 42
                         var right = 14
@@ -980,43 +1136,161 @@ Rectangle {
             }
         }
 
+        function schedulePlotRefresh(immediate) {
+            if (root.monitorTabIndex !== 2)
+                return
+
+            if (immediate) {
+                plotConfigRefreshTimer.stop()
+                plotConfigPaused = false
+                plotRefreshTimer.stop()
+                rebuildSamples()
+                return
+            }
+
+            if (plotConfigPaused || plotConfigRefreshTimer.running)
+                return
+
+            var now = Date.now()
+            var elapsed = now - lastPlotRefreshMs
+            if (elapsed >= minPlotIntervalMs) {
+                plotRefreshTimer.stop()
+                rebuildSamples()
+                return
+            }
+
+            plotRefreshTimer.interval = Math.max(1, Math.ceil(minPlotIntervalMs - elapsed))
+            if (!plotRefreshTimer.running)
+                plotRefreshTimer.start()
+        }
+
+        function beginPlotConfigPause() {
+            if (root.monitorTabIndex !== 2)
+                return
+
+            plotRefreshTimer.stop()
+            plotConfigRefreshTimer.stop()
+            if (plotConfigPaused)
+                return
+
+            plotConfigPaused = true
+            curveSamples = []
+            latestValues = []
+            sampleCount = 0
+            matchedFrameCount = 0
+            filterValid = false
+            filterStatus = "配置切换中，暂停绘制"
+            visibleStartTime = 0
+            visibleEndTime = 0
+            visibleStartText = ""
+            visibleEndText = ""
+            minValue = 0
+            maxValue = 0
+            plotCanvas.requestPaint()
+        }
+
+        function deferPlotRefresh() {
+            if (root.monitorTabIndex !== 2)
+                return
+
+            beginPlotConfigPause()
+            plotRefreshTimer.stop()
+            plotConfigRefreshTimer.stop()
+            plotConfigRefreshTimer.start()
+        }
+
+        function resumePlotRefresh() {
+            if (root.monitorTabIndex !== 2)
+                return
+
+            plotConfigPaused = false
+            rebuildSamples()
+        }
+
+        function refreshViewportOnly() {
+            if (root.monitorTabIndex !== 2)
+                return
+
+            if (sampleCount > 0) {
+                updateVisibleRange()
+                plotCanvas.requestPaint()
+                return
+            }
+
+            deferPlotRefresh()
+        }
+
         function rebuildSamples() {
-            var frames = monitorModel.frames(800)
+            lastPlotRefreshMs = Date.now()
+            var frames = monitorModel.frames(5000)
             var parsed = []
             var latest = []
             var total = 0
-            var scale = Number(scaleField.text)
-            if (!isFinite(scale))
-                scale = 1
+            var matched = 0
+            var latestDataBytes = 0
+            var lastPlotTime = Number.NEGATIVE_INFINITY
+            refreshProtocolChoices(frames)
+            var selection = selectedProtocol()
+            var targetSet = selection.cmdSet
+            var targetId = selection.cmdId
 
             for (var curve = 0; curve < curveModel.count; curve++) {
                 parsed.push([])
                 latest.push(Number.NaN)
             }
 
+            filterValid = selection.valid
+            if (!filterValid) {
+                matchedFrameCount = 0
+                filterStatus = frames.length > 0 ? "请选择协议监控中的协议" : "协议监控暂无可选协议"
+                applySampleResult(parsed, latest, 0)
+                return
+            }
+
             for (var i = 0; i < frames.length; i++) {
                 var frame = frames[i]
-                var bytes = parseDataBytes(frame.data)
+                if (!frameMatchesCommand(frame, targetSet, targetId))
+                    continue
+
+                matched++
+                var bytes = frameDataBytes(frame)
+                latestDataBytes = bytes.length
                 var timeValue = timestampMs(frame.timestamp, i)
+                if (!isFinite(timeValue))
+                    timeValue = i
+                if (timeValue <= lastPlotTime)
+                    timeValue = lastPlotTime + 1
+                lastPlotTime = timeValue
 
                 for (var c = 0; c < curveModel.count; c++) {
                     var config = curveModel.get(c)
                     if (config.hidden)
                         continue
 
-                    var value = luaCurveValue(frame, c)
-                    if (!isFinite(value))
-                        value = readBytes(bytes, config.offset, dataTypeOptions[config.typeIndex] || dataTypeOptions[0])
+                    var value = readBytes(bytes, config.offset, dataTypeOptions[config.typeIndex] || dataTypeOptions[0])
                     if (!isFinite(value))
                         continue
 
-                    value = value * scale
                     parsed[c].push({ t: timeValue, v: value, timeText: frame.timestamp || "" })
                     latest[c] = value
                     total++
                 }
             }
 
+            matchedFrameCount = matched
+            if (matched === 0)
+                filterStatus = "扫描 " + frames.length + " 帧，未匹配 "
+                        + commandText(targetSet, targetId)
+            else if (total === 0)
+                filterStatus = "匹配 " + matched + " 帧，Data " + latestDataBytes + "B，未取到有效数值"
+            else
+                filterStatus = "扫描 " + frames.length + " 帧，匹配 " + matched
+                        + " 帧，Data " + latestDataBytes + "B，绘制 " + total + " 点"
+
+            applySampleResult(parsed, latest, total)
+        }
+
+        function applySampleResult(parsed, latest, total) {
             curveSamples = parsed
             latestValues = latest
             sampleCount = total
@@ -1033,18 +1307,198 @@ Rectangle {
             plotCanvas.requestPaint()
         }
 
-        function frameValue(frame, offset, typeText) {
-            var bytes = parseDataBytes(frame.data)
-            return readBytes(bytes, offset, typeText)
+        function cleanHexText(text) {
+            return String(text || "").trim().replace(/0x/gi, "").replace(/[^0-9A-Fa-f]/g, "")
         }
 
-        function luaCurveValue(frame, curveIndex) {
-            var key = "luaCurve" + (curveIndex + 1)
-            if (!frame || frame[key] === undefined || frame[key] === null || frame[key] === "")
-                return NaN
+        function parseCommandByte(text) {
+            var normalized = cleanHexText(text)
+            if (normalized.length === 0)
+                return -1
+            if (!/^[0-9A-Fa-f]{1,2}$/.test(normalized))
+                return -1
 
-            var value = Number(frame[key])
-            return isFinite(value) ? value : NaN
+            var value = parseInt(normalized, 16)
+            return isFinite(value) && value >= 0 && value <= 255 ? value : -1
+        }
+
+        function parseCommandWord(text) {
+            var normalized = cleanHexText(text)
+            if (normalized.length === 0)
+                return -1
+            if (!/^[0-9A-Fa-f]{1,4}$/.test(normalized))
+                return -1
+
+            var value = parseInt(normalized, 16)
+            return isFinite(value) && value >= 0 && value <= 65535 ? value : -1
+        }
+
+        function frameMatchesCommand(frame, targetSet, targetId) {
+            if (!frame)
+                return false
+
+            if (parseCommandByte(frame.cmdSet) === targetSet
+                    && parseCommandByte(frame.cmdId) === targetId) {
+                return true
+            }
+
+            var targetWord = ((targetSet & 0xff) << 8) | (targetId & 0xff)
+            if (parseCommandWord(frame.cmd) === targetWord)
+                return true
+
+            return rawFrameCommandWord(frame.rawHex) === targetWord
+        }
+
+        function commandPair(cmdSet, cmdId) {
+            var setValue = cmdSet & 0xff
+            var idValue = cmdId & 0xff
+            var label = commandText(setValue, idValue)
+            return {
+                valid: true,
+                cmdSet: setValue,
+                cmdId: idValue,
+                key: hexByteText(setValue) + ":" + hexByteText(idValue),
+                label: label
+            }
+        }
+
+        function frameCommandPair(frame) {
+            if (!frame)
+                return { valid: false }
+
+            var setValue = parseCommandByte(frame.cmdSet)
+            var idValue = parseCommandByte(frame.cmdId)
+            if (setValue >= 0 && idValue >= 0)
+                return commandPair(setValue, idValue)
+
+            var word = parseCommandWord(frame.cmd)
+            if (word < 0)
+                word = rawFrameCommandWord(frame.rawHex)
+            if (word < 0)
+                return { valid: false }
+
+            return commandPair((word >> 8) & 0xff, word & 0xff)
+        }
+
+        function refreshProtocolChoices(frames) {
+            var seen = ({})
+            var entries = []
+            for (var i = 0; i < frames.length; i++) {
+                var pair = frameCommandPair(frames[i])
+                if (!pair.valid || seen[pair.key])
+                    continue
+
+                seen[pair.key] = true
+                entries.push(pair)
+            }
+
+            var signature = entries.map(function(item) { return item.key }).join("|")
+            if (signature !== protocolChoiceSignature) {
+                protocolChoiceSignature = signature
+                protocolChoiceModel.clear()
+                for (var e = 0; e < entries.length; e++) {
+                    protocolChoiceModel.append({
+                        key: entries[e].key,
+                        label: entries[e].label,
+                        cmdSet: entries[e].cmdSet,
+                        cmdId: entries[e].cmdId
+                    })
+                }
+            }
+
+            if (protocolChoiceModel.count === 0) {
+                selectedProtocolKey = ""
+                selectedProtocolIndex = -1
+                return
+            }
+
+            var preferredKey = selectedProtocolKey
+            if (preferredKey.length === 0)
+                preferredKey = String(settingsManager.loadValue("curve.protocolKey", ""))
+
+            var index = protocolIndexByKey(preferredKey)
+            if (index < 0)
+                index = 0
+
+            selectProtocol(index, false)
+        }
+
+        function protocolIndexByKey(key) {
+            if (!key || key.length === 0)
+                return -1
+
+            for (var i = 0; i < protocolChoiceModel.count; i++) {
+                if (protocolChoiceModel.get(i).key === key)
+                    return i
+            }
+            return -1
+        }
+
+        function selectProtocol(index, save) {
+            if (index < 0 || index >= protocolChoiceModel.count) {
+                selectedProtocolIndex = -1
+                selectedProtocolKey = ""
+                return
+            }
+
+            var item = protocolChoiceModel.get(index)
+            selectedProtocolIndex = index
+            selectedProtocolKey = item.key
+            if (save)
+                settingsManager.saveValue("curve.protocolKey", item.key)
+        }
+
+        function selectedProtocol() {
+            if (selectedProtocolIndex < 0 || selectedProtocolIndex >= protocolChoiceModel.count)
+                return { valid: false, cmdSet: -1, cmdId: -1 }
+
+            var item = protocolChoiceModel.get(selectedProtocolIndex)
+            return {
+                valid: true,
+                cmdSet: item.cmdSet,
+                cmdId: item.cmdId
+            }
+        }
+
+        function commandText(cmdSet, cmdId) {
+            return "0x" + hexByteText(cmdSet) + " / 0x" + hexByteText(cmdId)
+        }
+
+        function hexByteText(value) {
+            var text = Number(value || 0).toString(16).toUpperCase()
+            return text.length < 2 ? ("0" + text) : text.slice(-2)
+        }
+
+        function frameDataBytes(frame) {
+            if (!frame)
+                return []
+
+            var dataBytes = parseDataBytes(frame.data)
+            var rawDataBytes = rawFrameUserDataBytes(frame.rawHex)
+            return rawDataBytes.length > dataBytes.length ? rawDataBytes : dataBytes
+        }
+
+        function rawFrameCommandWord(rawHex) {
+            var raw = parseDataBytes(rawHex)
+            if (raw.length < 14 || raw[0] !== 0xaa)
+                return -1
+
+            return raw[12] | (raw[13] << 8)
+        }
+
+        function rawFrameUserDataBytes(rawHex) {
+            var raw = parseDataBytes(rawHex)
+            if (raw.length < 18 || raw[0] !== 0xaa)
+                return []
+
+            var payloadLen = raw[6] | (raw[7] << 8)
+            var payloadStart = 10
+            var dataStart = payloadStart + 6
+            var dataEnd = payloadStart + payloadLen
+            if (payloadLen < 6 || dataEnd > raw.length)
+                return []
+
+            return raw.slice(dataStart, dataEnd)
         }
 
         function appendCurve() {
@@ -1052,11 +1506,22 @@ Rectangle {
                 return
 
             curveModel.append({
-                offset: Math.min(63, curveModel.count),
-                typeIndex: 0,
+                offset: Math.min(63, curveModel.count * 4),
+                typeIndex: defaultCurveTypeIndex(),
                 hidden: false
             })
-            plotRefreshTimer.restart()
+            deferPlotRefresh()
+        }
+
+        function appendDefaultCurves() {
+            var floatIndex = defaultCurveTypeIndex()
+            curveModel.append({ offset: 0, typeIndex: floatIndex, hidden: false })
+            curveModel.append({ offset: 4, typeIndex: floatIndex, hidden: false })
+        }
+
+        function defaultCurveTypeIndex() {
+            var index = dataTypeOptions.indexOf("float LE")
+            return index >= 0 ? index : 0
         }
 
         function removeCurve(index) {
@@ -1064,16 +1529,21 @@ Rectangle {
                 return
 
             curveModel.remove(index)
-            plotRefreshTimer.restart()
+            deferPlotRefresh()
         }
 
         function curveColor(index) {
             return curvePalette[index % curvePalette.length]
         }
 
-        function zoomLabel(value) {
-            var zoom = Math.max(1, Math.round(value))
-            return zoom <= 1 ? "全量" : ("x" + zoom)
+        function currentSecondsPerDiv() {
+            var index = Math.max(0, Math.min(secondsPerDivOptions.length - 1,
+                                             Math.round(secondsPerDivSlider.value)))
+            return secondsPerDivOptions[index]
+        }
+
+        function secondsPerDivLabel(value) {
+            return Number(value).toString() + "s/div"
         }
 
         function updateVisibleRange() {
@@ -1086,14 +1556,11 @@ Rectangle {
                 return
             }
 
-            var allStart = allRange[0]
             var allEnd = allRange[1]
-            var span = Math.max(1, allEnd - allStart)
-            var zoom = Math.max(1, Math.round(timeZoomSlider.value))
-            var visibleSpan = zoom <= 1 ? span : Math.max(1, span / zoom)
+            var visibleSpan = Math.max(1, currentSecondsPerDiv() * 1000 * plotTimeDivisions)
 
             visibleEndTime = allEnd
-            visibleStartTime = Math.max(allStart, allEnd - visibleSpan)
+            visibleStartTime = allEnd - visibleSpan
             visibleStartText = formatTimeMs(visibleStartTime)
             visibleEndText = formatTimeMs(visibleEndTime)
 

@@ -182,7 +182,10 @@ def open_channel(args):
     bind(lib)
     device = lib.ZCAN_OpenDevice(args.device_type, args.device_index, 0)
     if not device:
-        raise RuntimeError("ZCAN_OpenDevice failed")
+        raise RuntimeError(
+            f"ZCAN_OpenDevice failed: device_type={args.device_type} "
+            f"device_index={args.device_index} zlg_lib={args.zlg_lib}"
+        )
     channel = None
     try:
         if args.format == "can":

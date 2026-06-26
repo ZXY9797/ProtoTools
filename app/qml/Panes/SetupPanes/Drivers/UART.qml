@@ -85,6 +85,7 @@ ColumnLayout {
             model: uartDriver.availablePorts
             Layout.fillWidth: true
             Layout.minimumWidth: 0
+            Layout.preferredWidth: 1
             implicitHeight: root.controlHeight
             font.pixelSize: 12
             focusPolicy: Qt.TabFocus
@@ -127,6 +128,7 @@ ColumnLayout {
             editable: true
             Layout.fillWidth: true
             Layout.minimumWidth: 0
+            Layout.preferredWidth: 1
             implicitHeight: root.controlHeight
             font.pixelSize: 12
             focusPolicy: Qt.TabFocus

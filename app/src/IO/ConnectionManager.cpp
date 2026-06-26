@@ -57,6 +57,10 @@ ConnectionManager::ConnectionManager(QObject *parent)
     m_lastPorts = availablePorts();
     m_portPollTimer.start(1000);
 
+    m_connectionLossTimer.setSingleShot(true);
+    connect(&m_connectionLossTimer, &QTimer::timeout,
+            this, &ConnectionManager::onConnectionLossTimeout);
+
     // 恢复链路类型
     m_linkType = normalizeLinkType(SettingsManager::instance()->loadValue("setup.linkType", "UART").toString());
     const QStringList knownLinkTypes = linkTypes();
@@ -66,6 +70,12 @@ ConnectionManager::ConnectionManager(QObject *parent)
     SettingsManager::instance()->saveValue("setup.linkType", m_linkType);
 
     if (auto *settings = SettingsManager::instance()) {
+        m_uartUi->setPortName(settings->loadValue(QStringLiteral("setup.uart.portName"), m_uartUi->portName()).toString());
+        m_uartUi->setBaudRate(parseIntegerSetting(settings->loadValue(QStringLiteral("setup.uart.baudRate"), m_uartUi->baudRate()), m_uartUi->baudRate()));
+        m_uartUi->setDataBits(parseIntegerSetting(settings->loadValue(QStringLiteral("setup.uart.dataBits"), m_uartUi->dataBits()), m_uartUi->dataBits()));
+        m_uartUi->setStopBits(parseIntegerSetting(settings->loadValue(QStringLiteral("setup.uart.stopBits"), m_uartUi->stopBits()), m_uartUi->stopBits()));
+        m_uartUi->setParity(settings->loadValue(QStringLiteral("setup.uart.parity"), m_uartUi->parity()).toString());
+
         m_usbUi->setVendorId(parseIntegerSetting(settings->loadValue(QStringLiteral("setup.usb.vendorId"), m_usbUi->vendorId()), m_usbUi->vendorId()));
         m_usbUi->setProductId(parseIntegerSetting(settings->loadValue(QStringLiteral("setup.usb.productId"), m_usbUi->productId()), m_usbUi->productId()));
         m_usbUi->setInterfaceNumber(settings->loadValue(QStringLiteral("setup.usb.interfaceNumber"), m_usbUi->interfaceNumber()).toInt());
@@ -98,7 +108,7 @@ ConnectionManager::ConnectionManager(QObject *parent)
 
 ConnectionManager::~ConnectionManager()
 {
-    closeConnection();
+    closeConnection(true);
 }
 
 // ============================================================================
@@ -142,9 +152,10 @@ void ConnectionManager::setLinkType(const QString &type)
     const QString normalizedType = knownLinkTypes.contains(normalizedInput) ? normalizedInput : knownLinkTypes.value(0);
     if (m_linkType == normalizedType) return;
     setConnecting(false);
-    closeConnection();
+    closeConnection(true);
     m_linkType = normalizedType;
-    SettingsManager::instance()->saveValue("setup.linkType", normalizedType);
+    if (m_persistSettings)
+        SettingsManager::instance()->saveValue("setup.linkType", normalizedType);
     createLiveDevice();
     emit linkTypeChanged();
     emit connectionChanged();
@@ -152,7 +163,35 @@ void ConnectionManager::setLinkType(const QString &type)
 
 bool ConnectionManager::isConnected() const
 {
+    return m_visibleConnected;
+}
+
+bool ConnectionManager::transportOpen() const
+{
     return m_liveDevice && m_liveDevice->isOpen();
+}
+
+void ConnectionManager::setPersistSettings(bool value)
+{
+    if (m_persistSettings == value)
+        return;
+
+    m_persistSettings = value;
+    emit persistSettingsChanged();
+}
+
+void ConnectionManager::setConnectionStateHold(bool enabled, int timeoutMs)
+{
+    m_connectionLossTimeoutMs = qMax(1000, timeoutMs);
+    if (m_holdConnectionState == enabled) {
+        updateVisibleConnection(false);
+        return;
+    }
+
+    m_holdConnectionState = enabled;
+    if (!m_holdConnectionState)
+        m_connectionLossTimer.stop();
+    updateVisibleConnection(false);
 }
 
 void ConnectionManager::setErrorReportingSuppressed(bool value)
@@ -229,7 +268,7 @@ void ConnectionManager::openConnection(bool resetStatistics)
     // 将 live driver 的连接状态/错误信号桥接到 ConnectionManager
     if (auto *drv = m_liveDevice->driver()) {
         connect(drv, &IO::HAL_Driver::connectionChanged,
-                this, &ConnectionManager::connectionChanged, Qt::UniqueConnection);
+                this, &ConnectionManager::onDriverConnectionChanged, Qt::UniqueConnection);
         connect(drv, &IO::HAL_Driver::errorOccurred,
                 this, [this](const QString &msg) {
                     setConnecting(false);
@@ -239,7 +278,7 @@ void ConnectionManager::openConnection(bool resetStatistics)
         // 连接失败时清除 connecting 状态
         connect(drv, &IO::HAL_Driver::connectionChanged,
                 this, [this]() {
-                    if (m_liveDevice && m_liveDevice->isOpen())
+                    if (transportOpen())
                         setConnecting(false);
                 });
     }
@@ -248,22 +287,29 @@ void ConnectionManager::openConnection(bool resetStatistics)
         resetStats();
     setConnecting(true);
     m_liveDevice->open();
-    if (!m_liveDevice->isOpen())
+    if (!transportOpen())
         setConnecting(false);
 
-    emit connectionChanged();
+    updateVisibleConnection(false);
 }
 
 void ConnectionManager::closeConnection()
 {
+    closeConnection(true);
+}
+
+void ConnectionManager::closeConnection(bool forceVisibleDisconnect)
+{
     setConnecting(false);
     if (m_liveDevice) m_liveDevice->close();
-    emit connectionChanged();
+    if (forceVisibleDisconnect)
+        m_holdConnectionState = false;
+    updateVisibleConnection(forceVisibleDisconnect);
 }
 
 void ConnectionManager::sendData(const QByteArray &data)
 {
-    if (!m_liveDevice || !m_liveDevice->isOpen()) return;
+    if (!transportOpen()) return;
     qint64 written = m_liveDevice->write(data);
     if (written > 0) {
         m_txBytes += written;
@@ -297,6 +343,50 @@ void ConnectionManager::resetStats()
 // ============================================================================
 // DriverProperty 接口
 // ============================================================================
+
+void ConnectionManager::onDriverConnectionChanged()
+{
+    setConnecting(false);
+    updateVisibleConnection(false);
+}
+
+void ConnectionManager::onConnectionLossTimeout()
+{
+    if (!transportOpen())
+        setVisibleConnected(false);
+}
+
+void ConnectionManager::updateVisibleConnection(bool forceDisconnect)
+{
+    if (forceDisconnect) {
+        m_connectionLossTimer.stop();
+        setVisibleConnected(false);
+        return;
+    }
+
+    if (transportOpen()) {
+        m_connectionLossTimer.stop();
+        setVisibleConnected(true);
+        return;
+    }
+
+    if (m_holdConnectionState && m_visibleConnected) {
+        if (!m_connectionLossTimer.isActive())
+            m_connectionLossTimer.start(m_connectionLossTimeoutMs);
+        return;
+    }
+
+    m_connectionLossTimer.stop();
+    setVisibleConnected(false);
+}
+
+void ConnectionManager::setVisibleConnected(bool value)
+{
+    if (m_visibleConnected == value)
+        return;
+    m_visibleConnected = value;
+    emit connectionChanged();
+}
 
 QVariantList ConnectionManager::activeDriverProperties() const
 {

@@ -16,17 +16,28 @@ Rectangle {
     property real savedProtoEditorHeight: 420
     property real leftMinimumWidth: 560
     property real rightMinimumWidth: 340
-    property real rightMaximumWidth: 520
-    property real rightPreferredWidth: 400
+    property real rightMaximumWidth: 760
+    property real rightWidthRatio: 0.34
+    property real rightMinRatio: 0.22
+    property real rightMaxRatio: 0.42
+    property bool persistLayoutState: true
     property real requiredMinimumWidth: Math.max(1040, leftMinimumWidth + rightMinimumWidth + 4)
     property real requiredMinimumHeight: Math.ceil(linkConfigPanel.contentHeight + protoEditorPanel.requiredMinimumHeight + 26)
     readonly property bool luaScriptPanelActive: monitorPanel.luaScriptPanelVisible
 
-    function effectiveRightWidth() {
-        var available = Math.max(1, mainSplit.width - horizontalHandle.width)
+    function clampRightRatio(value) {
+        return Math.max(root.rightMinRatio, Math.min(root.rightMaxRatio, value))
+    }
+
+    function clampRightWidth(value, available) {
         var maxByLeft = Math.max(root.rightMinimumWidth, available - root.leftMinimumWidth)
         return Math.max(root.rightMinimumWidth,
-                        Math.min(root.rightMaximumWidth, root.rightPreferredWidth, maxByLeft))
+                        Math.min(root.rightMaximumWidth, value, maxByLeft))
+    }
+
+    function effectiveRightWidth() {
+        var available = Math.max(1, mainSplit.width - horizontalHandle.width)
+        return clampRightWidth(available * root.rightWidthRatio, available)
     }
 
     Component.onCompleted: {
@@ -35,16 +46,22 @@ Rectangle {
         savedScriptHeight = settingsManager.loadValue("layout.scriptHeight", 170)
         savedLinkConfigHeight = settingsManager.loadValue("layout.linkConfigHeight", 180)
         savedProtoEditorHeight = settingsManager.loadValue("layout.protoEditorHeight", 420)
-        rightPreferredWidth = Math.max(root.rightMinimumWidth,
-                                       Math.min(root.rightMaximumWidth,
-                                                settingsManager.loadValue("layout.rightPreferredWidth", 430)))
+        var savedRatio = Number(settingsManager.loadValue("layout.rightWidthRatio", -1))
+        if (savedRatio > 0) {
+            rightWidthRatio = clampRightRatio(savedRatio)
+        } else {
+            var baseWidth = Math.max(root.requiredMinimumWidth, root.width > 0 ? root.width : 1280)
+            var legacyRightWidth = Number(settingsManager.loadValue("layout.rightPreferredWidth", 430))
+            rightWidthRatio = clampRightRatio(legacyRightWidth / Math.max(1, baseWidth - 4))
+        }
         // 恢复最后使用的标签页
         monitorPanel.monitorTabIndex = settingsManager.loadValue("layout.monitorTabIndex", 0)
     }
 
     Component.onDestruction: {
         // 保存标签页状态
-        settingsManager.saveValue("layout.monitorTabIndex", monitorPanel.monitorTabIndex)
+        if (persistLayoutState)
+            settingsManager.saveValue("layout.monitorTabIndex", monitorPanel.monitorTabIndex)
     }
 
     function switchToTerminal() {
@@ -104,9 +121,11 @@ Rectangle {
                     if (!leftCol.resizing) {
                         settingsManager.saveValue("layout.leftColWidth", leftCol.width)
                         if (mainSplit.width > 0) {
-                            root.rightPreferredWidth = Math.max(root.rightMinimumWidth,
-                                Math.min(root.rightMaximumWidth, mainSplit.width - horizontalHandle.width - leftCol.width))
-                            settingsManager.saveValue("layout.rightPreferredWidth", root.rightPreferredWidth)
+                            var available = Math.max(1, mainSplit.width - horizontalHandle.width)
+                            var rightWidth = root.clampRightWidth(available - leftCol.width, available)
+                            root.rightWidthRatio = root.clampRightRatio(rightWidth / available)
+                            settingsManager.saveValue("layout.rightWidthRatio", root.rightWidthRatio)
+                            settingsManager.saveValue("layout.rightPreferredWidth", rightWidth)
                         }
                         settingsManager.saveValue("layout.monitorHeight", monitorPanel.height)
                         if (scriptPanel.visible)
@@ -135,9 +154,10 @@ Rectangle {
                         var available = Math.max(1, mainSplit.width - horizontalHandle.width)
                         var newLeft = Math.max(root.leftMinimumWidth,
                                                Math.min(available - root.rightMinimumWidth, horizontalHandle.x + mouse.x))
-                        root.rightPreferredWidth = Math.max(root.rightMinimumWidth,
-                            Math.min(root.rightMaximumWidth, available - newLeft))
-                        settingsManager.saveValue("layout.rightPreferredWidth", root.rightPreferredWidth)
+                        var rightWidth = root.clampRightWidth(available - newLeft, available)
+                        root.rightWidthRatio = root.clampRightRatio(rightWidth / available)
+                        settingsManager.saveValue("layout.rightWidthRatio", root.rightWidthRatio)
+                        settingsManager.saveValue("layout.rightPreferredWidth", rightWidth)
                     }
                 }
             }

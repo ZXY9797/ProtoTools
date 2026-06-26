@@ -119,6 +119,7 @@ Item {
                 id: deviceFilterField
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
+                Layout.preferredWidth: 1
                 implicitHeight: root.controlHeight
                 text: root.deviceFilterText
                 placeholderText: "名称或MAC"
@@ -147,6 +148,7 @@ Item {
                 id: deviceCombo
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
+                Layout.preferredWidth: 1
                 implicitHeight: root.controlHeight
                 font.pixelSize: 12
                 focusPolicy: Qt.TabFocus
@@ -197,6 +199,7 @@ Item {
                 id: serviceCombo
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
+                Layout.preferredWidth: 1
                 implicitHeight: root.controlHeight
                 font.pixelSize: 12
                 focusPolicy: Qt.TabFocus
@@ -231,6 +234,7 @@ Item {
                 id: txUuidCombo
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
+                Layout.preferredWidth: 1
                 implicitHeight: root.controlHeight
                 font.pixelSize: 11
                 font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
@@ -267,6 +271,7 @@ Item {
                 id: rxUuidCombo
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
+                Layout.preferredWidth: 1
                 implicitHeight: root.controlHeight
                 font.pixelSize: 11
                 font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"

@@ -38,6 +38,7 @@ class ConnectionManager : public QObject
     Q_PROPERTY(QStringList linkTypes READ linkTypes CONSTANT)
     Q_PROPERTY(bool connected READ isConnected NOTIFY connectionChanged)
     Q_PROPERTY(bool connecting READ isConnecting NOTIFY connectingChanged)
+    Q_PROPERTY(bool persistSettings READ persistSettings WRITE setPersistSettings NOTIFY persistSettingsChanged)
     Q_PROPERTY(bool errorReportingSuppressed READ errorReportingSuppressed WRITE setErrorReportingSuppressed NOTIFY errorReportingSuppressedChanged)
     Q_PROPERTY(QStringList availablePorts READ availablePorts NOTIFY availablePortsChanged)
     Q_PROPERTY(QString connectedLinkName READ connectedLinkName NOTIFY connectionChanged)
@@ -71,6 +72,10 @@ public:
     QString linkType() const { return m_linkType; }
     void setLinkType(const QString &type);
     bool isConnected() const;
+    bool transportOpen() const;
+    bool persistSettings() const { return m_persistSettings; }
+    void setPersistSettings(bool value);
+    void setConnectionStateHold(bool enabled, int timeoutMs = 60000);
     bool errorReportingSuppressed() const { return m_errorReportingSuppressed; }
     void setErrorReportingSuppressed(bool value);
     QStringList availablePorts() const;
@@ -100,6 +105,7 @@ public:
     // ========== 操作 ==========
     Q_INVOKABLE void openConnection(bool resetStatistics = true);
     Q_INVOKABLE void closeConnection();
+    void closeConnection(bool forceVisibleDisconnect);
     Q_INVOKABLE void sendData(const QByteArray &data);
     Q_INVOKABLE void refreshPorts();
     Q_INVOKABLE void resetStats();
@@ -128,6 +134,7 @@ signals:
     void errorOccurred(const QString &error);
     void terminalModeChanged();
     void connectingChanged();
+    void persistSettingsChanged();
     void errorReportingSuppressedChanged();
 
     // 数据管线
@@ -138,10 +145,14 @@ signals:
 private slots:
     void onFrameReady(int deviceId, const QVariantMap &frame);
     void onRawDataReady(int deviceId, const QByteArray &data);
+    void onDriverConnectionChanged();
+    void onConnectionLossTimeout();
 
 private:
     void createLiveDevice();
     void destroyLiveDevice();
+    void updateVisibleConnection(bool forceDisconnect = false);
+    void setVisibleConnected(bool value);
 
     IO::HAL_Driver *activeUiDriver() const;
 
@@ -156,6 +167,10 @@ private:
     bool m_terminalMode = false;
     bool m_connecting = false;
     bool m_errorReportingSuppressed = false;
+    bool m_persistSettings = true;
+    bool m_holdConnectionState = false;
+    bool m_visibleConnected = false;
+    int m_connectionLossTimeoutMs = 60000;
 
     qint64 m_rxBytes = 0;
     qint64 m_txBytes = 0;
@@ -165,6 +180,7 @@ private:
     qint64 m_txBytesLast = 0;
     QTimer m_speedTimer;
     QTimer m_portPollTimer;
+    QTimer m_connectionLossTimer;
     QStringList m_lastPorts;
 };
 

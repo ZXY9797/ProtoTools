@@ -8,11 +8,15 @@
 
 #include <QFontDatabase>
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QGuiApplication>
+#include <QQueue>
 #include <QQuickStyle>
 #include <QScreen>
+#include <QTimer>
 
 #include <algorithm>
+#include <memory>
 
 #include "Misc/CommonFonts.h"
 #include "Misc/ThemeManager.h"
@@ -75,6 +79,11 @@ void ModuleManager::initializeQmlInterface(QQmlApplicationEngine *engine)
 
     // ── SettingsManager 必须最先创建（ConnectionManager/Terminal 构造时依赖其 instance()）──
     auto *settingsManager   = new SettingsManager(app);
+    if (!settingsManager->loadValue(QStringLiteral("migration.defaultWorkspaceUartMonitor"), false).toBool()) {
+        settingsManager->saveValue(QStringLiteral("setup.linkType"), QStringLiteral("UART"));
+        settingsManager->saveValue(QStringLiteral("layout.monitorTabIndex"), 0);
+        settingsManager->saveValue(QStringLiteral("migration.defaultWorkspaceUartMonitor"), true);
+    }
     settingsManager->saveValue("monitor.commandEchoEnabled", false);
     if (settingsManager->loadValue("protoeditor.seq", "0005").toString().trimmed().isEmpty())
         settingsManager->saveValue("protoeditor.seq", "0005");
@@ -159,14 +168,14 @@ void ModuleManager::initializeQmlInterface(QQmlApplicationEngine *engine)
     QObject::connect(connectionManager, &ConnectionManager::frameReceived,
                      luaEngine, [luaEngine, monitorModel, connectionManager](const QVariantMap &frame) {
         if (connectionManager->isTerminalMode()) {
-            monitorModel->enqueueFrame(frame);
+            monitorModel->addFrame(frame);
             return;
         }
         QVariantMap processedFrame = luaEngine->processFrameRecv(frame);
         const bool showFrame = processedFrame.value(QStringLiteral("__show"), true).toBool();
         processedFrame.remove(QStringLiteral("__show"));
         if (showFrame)
-            monitorModel->enqueueFrame(processedFrame);
+            monitorModel->addFrame(processedFrame);
     });
 
     // 终端：原始数据
@@ -175,25 +184,56 @@ void ModuleManager::initializeQmlInterface(QQmlApplicationEngine *engine)
     QObject::connect(connectionManager, &ConnectionManager::dataSent,
                      terminalModel, &Terminal::appendTxData);
 
+    auto txEchoQueue = std::make_shared<QQueue<QByteArray>>();
+    auto *txEchoTimer = new QTimer(app);
+    txEchoTimer->setSingleShot(true);
+    QObject::connect(txEchoTimer, &QTimer::timeout,
+                     monitorModel, [monitorModel, sendEngine, txEchoQueue, txEchoTimer]() {
+        if (!monitorModel->commandEchoEnabled())
+        {
+            txEchoQueue->clear();
+            return;
+        }
+
+        QList<QVariantMap> frames;
+        frames.reserve(qMin(txEchoQueue->size(), 256));
+
+        QElapsedTimer budget;
+        budget.start();
+
+        int processed = 0;
+        while (!txEchoQueue->isEmpty() && processed < 256 && budget.elapsed() < 6) {
+            const QByteArray data = txEchoQueue->dequeue();
+            ++processed;
+
+            QVariantMap frame = sendEngine->parseFrame(data);
+            if (frame.isEmpty()) {
+                const QString hex = QString::fromLatin1(data.toHex(' ').toUpper());
+                frame["timestamp"] = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
+                frame["direction"] = QStringLiteral("TX");
+                frame["len"] = QString::number(data.size());
+                frame["type"] = QStringLiteral("RAW");
+                frame["data"] = hex;
+                frame["rawHex"] = hex;
+            } else {
+                frame["direction"] = QStringLiteral("TX");
+            }
+
+            frames.append(frame);
+        }
+
+        monitorModel->enqueueFrames(frames);
+        if (!txEchoQueue->isEmpty())
+            txEchoTimer->start(1);
+    });
     QObject::connect(connectionManager, &ConnectionManager::dataSent,
-                     monitorModel, [monitorModel, sendEngine](const QByteArray &data) {
+                     monitorModel, [monitorModel, txEchoQueue, txEchoTimer](const QByteArray &data) {
         if (!monitorModel->commandEchoEnabled())
             return;
 
-        QVariantMap frame = sendEngine->parseFrame(data);
-        if (frame.isEmpty()) {
-            const QString hex = QString::fromLatin1(data.toHex(' ').toUpper());
-            frame["timestamp"] = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
-            frame["direction"] = QStringLiteral("TX");
-            frame["len"] = QString::number(data.size());
-            frame["type"] = QStringLiteral("RAW");
-            frame["data"] = hex;
-            frame["rawHex"] = hex;
-        } else {
-            frame["direction"] = QStringLiteral("TX");
-        }
-
-        monitorModel->enqueueFrame(frame);
+        txEchoQueue->enqueue(data);
+        if (!txEchoTimer->isActive())
+            txEchoTimer->start(16);
     });
 
     // 终端发送 + Lua 发送 → ConnectionManager

@@ -560,6 +560,8 @@ Rectangle {
 
     component EditTextField: TextField {
         id: editTextField
+        Layout.minimumWidth: 0
+        Layout.preferredWidth: 1
         implicitHeight: 28
         selectByMouse: true
         color: root.textPrimary

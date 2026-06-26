@@ -10,7 +10,7 @@ What this script does:
    - Qt runtime and QML plugins: deployed by windeployqt
    - MSVC 2022 runtime: copied from Visual Studio redist directory
    - MSVC 2013 runtime: required by ZLG zlgcan.dll
-   - ZLG CAN DLL: required for CAN/CAN FD link
+   - ZLG CAN DLL and sibling kerneldlls directory: required for CAN/CAN FD link
 5. Wrap the portable directory into one self-extracting KPtools.exe with
    PyInstaller.
 6. Delete temporary build/deploy directories and leave only dist/KPtools.exe.
@@ -83,8 +83,26 @@ function Remove-Tree([string]$Path) {
 }
 
 function New-CleanDirectory([string]$Path) {
-    Remove-Tree $Path
-    New-Item -ItemType Directory -Path $Path | Out-Null
+    $safePath = Assert-InRepo $Path
+    if (Test-Path -LiteralPath $safePath) {
+        try {
+            Remove-Tree $safePath
+        } catch {
+            if (-not (Test-Path -LiteralPath $safePath -PathType Container)) {
+                throw
+            }
+            Write-Warning "Could not remove directory itself, clearing its contents instead: $safePath"
+            Get-ChildItem -LiteralPath $safePath -Force | ForEach-Object {
+                if ($_.PSIsContainer) {
+                    Remove-Item -LiteralPath $_.FullName -Recurse -Force
+                } else {
+                    Remove-Item -LiteralPath $_.FullName -Force
+                }
+            }
+            return
+        }
+    }
+    New-Item -ItemType Directory -Path $safePath | Out-Null
 }
 
 function Require-File([string]$Path, [string]$Message) {
@@ -114,9 +132,48 @@ function Invoke-VsDevCommand([string]$CommandLine, [string]$LogPath = "") {
     }
 }
 
+function Get-PeMachine([string]$Path) {
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $reader = New-Object System.IO.BinaryReader($stream)
+        if ($stream.Length -lt 0x40) { return "unknown" }
+        $stream.Seek(0x3c, [System.IO.SeekOrigin]::Begin) | Out-Null
+        $peOffset = $reader.ReadInt32()
+        if ($peOffset -lt 0 -or ($peOffset + 6) -gt $stream.Length) { return "unknown" }
+        $stream.Seek($peOffset, [System.IO.SeekOrigin]::Begin) | Out-Null
+        $signature = $reader.ReadUInt32()
+        if ($signature -ne 0x00004550) { return "unknown" }
+        $machine = $reader.ReadUInt16()
+        switch ($machine) {
+            0x8664 { return "x64" }
+            0x014c { return "x86" }
+            default { return "0x{0:x4}" -f $machine }
+        }
+    } finally {
+        $stream.Dispose()
+    }
+}
+
+function Resolve-ZlgDllCandidate([string]$Path, [bool]$Explicit) {
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return ""
+    }
+    $resolved = (Resolve-Path -LiteralPath $Path).Path
+    $machine = Get-PeMachine $resolved
+    if ($machine -ne "x64") {
+        $message = "Skipping non-x64 zlgcan.dll ($machine): $resolved"
+        if ($Explicit) {
+            throw "The selected zlgcan.dll must be x64 for this package.`n$message"
+        }
+        Write-Warning $message
+        return ""
+    }
+    return $resolved
+}
+
 function Find-ZlgDll {
-    if ($ZlgDll -and (Test-Path -LiteralPath $ZlgDll -PathType Leaf)) {
-        return (Resolve-Path -LiteralPath $ZlgDll).Path
+    if ($ZlgDll) {
+        return Resolve-ZlgDllCandidate $ZlgDll $true
     }
 
     $candidates = @(
@@ -125,11 +182,25 @@ function Find-ZlgDll {
         "C:\Program Files (x86)\ZCANPRO\zlgcan.dll"
     )
     foreach ($candidate in $candidates) {
-        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
-            return (Resolve-Path -LiteralPath $candidate).Path
+        $resolved = Resolve-ZlgDllCandidate $candidate $false
+        if ($resolved) {
+            return $resolved
         }
     }
     return ""
+}
+
+function Copy-ZlgRuntime([string]$ZlgDllPath, [string]$TargetDir) {
+    Copy-Item -LiteralPath $ZlgDllPath -Destination (Join-Path $TargetDir "zlgcan.dll") -Force
+
+    # Newer ZLG zlgcan.dll versions load device-specific helpers from a sibling
+    # kerneldlls directory at OpenDevice time, for example USBCANFD.dll.
+    $kernelDlls = Join-Path (Split-Path -Parent $ZlgDllPath) "kerneldlls"
+    if (Test-Path -LiteralPath $kernelDlls -PathType Container) {
+        Copy-Item -LiteralPath $kernelDlls -Destination (Join-Path $TargetDir "kerneldlls") -Recurse -Force
+    } else {
+        Write-Warning "ZLG kerneldlls directory was not found next to $ZlgDllPath. CAN/CAN FD may fail at OpenDevice on target PCs."
+    }
 }
 
 function Copy-Msvc2022Runtime([string]$TargetDir) {
@@ -293,7 +364,7 @@ if (-not $SkipZlgCan) {
     if (-not $resolvedZlgDll) {
         throw "zlgcan.dll was not found. Pass -ZlgDll <path> or use -SkipZlgCan for a package without ZLG CAN support."
     }
-    Copy-Item -LiteralPath $resolvedZlgDll -Destination (Join-Path $PortableDir "zlgcan.dll") -Force
+    Copy-ZlgRuntime $resolvedZlgDll $PortableDir
 }
 
 Write-Host "Step 5/7: Deploy Qt and runtime DLLs"
@@ -323,7 +394,7 @@ base_dir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 app_dir = os.path.join(base_dir, "KPtools-portable")
 app_exe = os.path.join(app_dir, "KPtools.exe")
 os.chdir(app_dir)
-sys.exit(subprocess.call([app_exe]))
+sys.exit(subprocess.call([app_exe] + sys.argv[1:]))
 '@
 [System.IO.File]::WriteAllText($launcher, $launcherCode, [System.Text.UTF8Encoding]::new($false))
 

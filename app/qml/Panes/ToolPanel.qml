@@ -11,6 +11,9 @@ Rectangle {
     property bool _restoring: true
     property int controlHeight: 26
     property int upgradeActionButtonWidth: 72
+    property int compactAddressFieldWidth: 68
+    property int compactCountFieldWidth: 58
+    property int compactBrowseButtonWidth: 32
     property real requiredMinimumHeight: Math.ceil(36 + upgradeScroll.topPadding + upgradeContentColumn.implicitHeight + upgradeScroll.bottomPadding)
     property var protocolCheckResult: ({})
     property bool protocolCheckHasInput: false
@@ -204,6 +207,8 @@ Rectangle {
                 TextField {
                     id: quickNameField
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 1
                     implicitHeight: 30
                     selectByMouse: true
                     color: root.textPrimary
@@ -725,6 +730,8 @@ Rectangle {
             rightPadding: 8
             topPadding: 8
             bottomPadding: 8
+            ScrollBar.vertical.policy: ScrollBar.AsNeeded
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
                 id: upgradeContentColumn
@@ -753,14 +760,21 @@ Rectangle {
                             font.weight: Font.DemiBold
                         }
 
-                        RowLayout {
+                        Item {
                             Layout.fillWidth: true
-                            spacing: 6
+                            Layout.preferredHeight: 28
 
                             TextField {
                                 id: compactFirmwarePathField
-                                Layout.fillWidth: true
+                                anchors.left: parent.left
+                                anchors.right: browseFirmwareButton.left
+                                anchors.rightMargin: 6
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: 28
                                 implicitHeight: 28
+                                leftPadding: 8
+                                rightPadding: 8
+                                clip: true
                                 font.pixelSize: 11
                                 font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
                                 color: root.textPrimary
@@ -787,13 +801,17 @@ Rectangle {
                             Button {
                                 id: browseFirmwareButton
                                 text: "..."
-                                implicitWidth: 34
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: root.compactBrowseButtonWidth
+                                height: 28
+                                implicitWidth: root.compactBrowseButtonWidth
                                 implicitHeight: 28
                                 padding: 0
                                 enabled: !firmwareUpgrade.running
                                 onClicked: firmwareUpgrade.browseFirmware(compactFirmwarePathField.text)
                                 contentItem: Item {
-                                    implicitWidth: 34
+                                    implicitWidth: root.compactBrowseButtonWidth
                                     implicitHeight: 28
 
                                     Row {
@@ -823,18 +841,28 @@ Rectangle {
                             }
                         }
 
-                        GridLayout {
+                        Item {
                             Layout.fillWidth: true
-                            columns: 6
-                            columnSpacing: 6
-                            rowSpacing: 5
+                            Layout.preferredHeight: 26
 
-                            Text { text: "Src/Dst"; color: root.textSecondary; font.pixelSize: 10; Layout.alignment: Qt.AlignVCenter }
+                            RowLayout {
+                                anchors.left: parent.left
+                                anchors.right: stressCountLabel.left
+                                anchors.rightMargin: 8
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: 26
+                                clip: true
+                                spacing: 5
+
+                                Text { text: "Src/Dst"; color: root.textSecondary; font.pixelSize: 10; Layout.alignment: Qt.AlignVCenter }
                             TextField {
                                 id: compactSrcField
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: 0
+                                Layout.minimumWidth: root.compactAddressFieldWidth
+                                Layout.preferredWidth: root.compactAddressFieldWidth
+                                Layout.maximumWidth: root.compactAddressFieldWidth
                                 implicitHeight: 26
+                                leftPadding: 5
+                                rightPadding: 5
                                 font.pixelSize: 11
                                 font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
                                 text: settingsManager.loadValue("upgrade.src", "0x0101")
@@ -846,9 +874,12 @@ Rectangle {
                             }
                             TextField {
                                 id: compactDstField
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: 0
+                                Layout.minimumWidth: root.compactAddressFieldWidth
+                                Layout.preferredWidth: root.compactAddressFieldWidth
+                                Layout.maximumWidth: root.compactAddressFieldWidth
                                 implicitHeight: 26
+                                leftPadding: 5
+                                rightPadding: 5
                                 font.pixelSize: 11
                                 font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
                                 text: settingsManager.loadValue("upgrade.dst", "0x0500")
@@ -858,11 +889,26 @@ Rectangle {
                                 onTextEdited: { firmwareUpgrade.dstAddr = parseHexField(text); settingsManager.saveValue("upgrade.dst", text) }
                                 Component.onCompleted: firmwareUpgrade.dstAddr = parseHexField(text)
                             }
-                            Text { text: "压测次数"; color: root.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; Layout.alignment: Qt.AlignVCenter }
+                            }
+                            Text {
+                                id: stressCountLabel
+                                text: "压测次数"
+                                anchors.right: compactStressCountField.left
+                                anchors.rightMargin: 5
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: root.textSecondary
+                                font.pixelSize: 10
+                                horizontalAlignment: Text.AlignRight
+                            }
                             TextField {
                                 id: compactStressCountField
-                                Layout.preferredWidth: 68
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: root.compactCountFieldWidth
+                                height: 26
                                 implicitHeight: 26
+                                leftPadding: 5
+                                rightPadding: 5
                                 font.pixelSize: 11
                                 text: settingsManager.loadValue("upgrade.stressCount", 10).toString()
                                 color: root.textPrimary
@@ -878,7 +924,6 @@ Rectangle {
                                     settingsManager.saveValue("upgrade.stressCount", v)
                                 }
                             }
-                            Item { Layout.fillWidth: true }
                         }
                     }
                 }
@@ -1143,7 +1188,14 @@ Rectangle {
 
                             VersionPill { label: "APP"; value: firmwareUpgrade.deviceAppVersion.length > 0 ? firmwareUpgrade.deviceAppVersion : "-"; accentColor: "#7AB7FF" }
                             VersionPill { label: "BL"; value: firmwareUpgrade.deviceBootloaderVersion.length > 0 ? firmwareUpgrade.deviceBootloaderVersion : "-"; accentColor: "#B6C8E8" }
-                            InfoField { label: "模块"; value: firmwareUpgrade.deviceModule.length > 0 ? firmwareUpgrade.deviceModule : "-"; mono: true }
+                            InfoField {
+                                label: "模块"
+                                value: firmwareUpgrade.deviceModule.length > 0 ? firmwareUpgrade.deviceModule : "-"
+                                mono: true
+                                labelWidth: 24
+                                valueFontSizeMode: Text.HorizontalFit
+                                valueElide: Text.ElideNone
+                            }
                             InfoField { label: "模块ID"; value: firmwareUpgrade.deviceModuleId.length > 0 ? firmwareUpgrade.deviceModuleId : "-"; mono: true }
                             InfoField { label: "硬件版本"; value: firmwareUpgrade.deviceHardwareVersion.length > 0 ? firmwareUpgrade.deviceHardwareVersion : "-"; mono: true }
                             InfoField { label: "升级模式"; value: firmwareUpgrade.deviceModes.length > 0 ? firmwareUpgrade.deviceModes : "-"; mono: true }
@@ -1709,6 +1761,9 @@ Rectangle {
         property string value: "-"
         property bool mono: false
         property bool emphasize: false
+        property int labelWidth: 48
+        property int valueFontSizeMode: Text.FixedSize
+        property int valueElide: Text.ElideRight
 
         Layout.fillWidth: true
         Layout.preferredWidth: 1
@@ -1729,7 +1784,7 @@ Rectangle {
                 color: emphasize ? "#BFD0E2" : "#8E99A6"
                 font.pixelSize: 9
                 font.weight: emphasize ? Font.Medium : Font.Normal
-                Layout.preferredWidth: 48
+                Layout.preferredWidth: infoField.labelWidth
                 Layout.alignment: Qt.AlignVCenter
                 maximumLineCount: 1
                 elide: Text.ElideRight
@@ -1740,11 +1795,13 @@ Rectangle {
                 text: infoField.value
                 color: emphasize ? "#F4F8FC" : "#E2E8EF"
                 font.pixelSize: 10
+                fontSizeMode: infoField.valueFontSizeMode
+                minimumPixelSize: 8
                 font.weight: emphasize ? Font.Medium : Font.Normal
                 font.family: mono ? (Qt.platform.os === "windows" ? "Consolas" : "monospace") : ""
                 horizontalAlignment: Text.AlignRight
                 maximumLineCount: 1
-                elide: Text.ElideRight
+                elide: infoField.valueElide
                 Layout.alignment: Qt.AlignVCenter
             }
         }

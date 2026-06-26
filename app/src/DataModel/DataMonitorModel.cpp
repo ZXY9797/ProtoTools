@@ -1,5 +1,11 @@
 #include "DataModel/DataMonitorModel.h"
 #include "Misc/TimerEvents.h"
+#include <QDate>
+#include <QDir>
+#include <QFile>
+#include <QFileDialog>
+#include <QStandardPaths>
+#include <QTextStream>
 #include <QTime>
 #include <QRegularExpression>
 #include <QStringList>
@@ -41,6 +47,14 @@ bool frameTimestampLess(const QVariant &lhs, const QVariant &rhs)
     }
 
     return left.value(SequenceKey).toLongLong() < right.value(SequenceKey).toLongLong();
+}
+
+bool canAppendInTimestampOrder(const QVariantList &existing, const QList<QVariant> &incoming)
+{
+    if (existing.isEmpty() || incoming.isEmpty())
+        return true;
+
+    return !frameTimestampLess(incoming.first(), existing.last());
 }
 
 QString normalizedSearchText(QString text)
@@ -132,6 +146,55 @@ QStringList monitorFilterKeys()
         QStringLiteral("cmdId"),
         QStringLiteral("data"),
     };
+}
+
+QString safeFilePart(QString text, const QString &fallback)
+{
+    text = text.trimmed();
+    if (text.isEmpty())
+        text = fallback;
+    text.replace(QRegularExpression(QStringLiteral("[<>:\"/\\\\|?*\\x00-\\x1F]+")), QStringLiteral("_"));
+    text.replace(QRegularExpression(QStringLiteral("\\s+")), QStringLiteral("_"));
+    text.replace(QRegularExpression(QStringLiteral("_+")), QStringLiteral("_"));
+    text = text.trimmed();
+    while (text.startsWith(QLatin1Char('_')))
+        text.remove(0, 1);
+    while (text.endsWith(QLatin1Char('_')))
+        text.chop(1);
+    if (text.isEmpty())
+        text = fallback;
+    return text.left(96);
+}
+
+QString compactTimestamp(QString timestamp)
+{
+    timestamp = timestamp.trimmed();
+    timestamp.remove(QRegularExpression(QStringLiteral("[^0-9A-Za-z]+")));
+    return timestamp.isEmpty() ? QStringLiteral("unknown") : timestamp;
+}
+
+QString formatHexBytes(QString rawHex)
+{
+    rawHex.remove(QStringLiteral("0x"), Qt::CaseInsensitive);
+    rawHex.replace(QRegularExpression(QStringLiteral("[^0-9A-Fa-f]+")), QStringLiteral(" "));
+
+    QStringList output;
+    const QStringList groups = rawHex.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    for (QString group : groups) {
+        if (group.size() % 2 != 0)
+            group.prepend(QLatin1Char('0'));
+        for (int i = 0; i + 1 < group.size(); i += 2)
+            output.append(QStringLiteral("0x%1").arg(group.mid(i, 2).toUpper()));
+    }
+    return output.join(QLatin1Char(' '));
+}
+
+QString frameRawHex(const QVariantMap &frame)
+{
+    QString rawHex = frame.value(QStringLiteral("rawHex")).toString().trimmed();
+    if (rawHex.isEmpty())
+        rawHex = frame.value(QStringLiteral("data")).toString().trimmed();
+    return formatHexBytes(rawHex);
 }
 
 bool wildcardMatchOne(const QString &candidate, QString pattern)
@@ -319,14 +382,87 @@ QVariantMap DataMonitorModel::frameAt(int row) const
 QVariantList DataMonitorModel::frames(int maxCount) const
 {
     QVariantList result;
-    const int total = rowCount();
+    const int total = m_allFrames.size();
     const int start = maxCount > 0 ? qMax(0, total - maxCount) : 0;
 
     result.reserve(total - start);
-    for (int i = start; i < total; ++i)
-        result.append(frameAt(i));
+    for (int i = start; i < total; ++i) {
+        QVariantMap frame = m_allFrames.at(i).toMap();
+        frame.remove(SequenceKey);
+        frame.insert(QStringLiteral("row"), i);
+        result.append(frame);
+    }
 
     return result;
+}
+
+bool DataMonitorModel::exportRawHex(const QString &linkType, const QString &linkInfo)
+{
+    QVariantList snapshot = m_allFrames;
+    {
+        QMutexLocker lock(&m_mutex);
+        for (const QVariantMap &frame : m_displayQueue)
+            snapshot.append(frame);
+    }
+
+    if (snapshot.isEmpty()) {
+        emit exportFailed(QStringLiteral("没有可导出的协议监控数据"));
+        return false;
+    }
+
+    std::stable_sort(snapshot.begin(), snapshot.end(), frameTimestampLess);
+
+    const QVariantMap firstFrame = snapshot.first().toMap();
+    const QVariantMap lastFrame = snapshot.last().toMap();
+    const QString startTime = compactTimestamp(firstFrame.value(QStringLiteral("timestamp")).toString());
+    const QString endTime = compactTimestamp(lastFrame.value(QStringLiteral("timestamp")).toString());
+    const QString datePart = QDate::currentDate().toString(QStringLiteral("yyyyMMdd"));
+    const QString linkPart = safeFilePart(QStringList{
+        linkType.trimmed().isEmpty() ? QStringLiteral("LINK") : linkType.trimmed(),
+        linkInfo.trimmed()
+    }.join(QLatin1Char('_')), QStringLiteral("LINK"));
+    const QString defaultName = QStringLiteral("KPtools_%1_%2_%3-%4.txt")
+        .arg(linkPart, datePart, startTime, endTime);
+
+    QString startDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    if (startDir.isEmpty())
+        startDir = QDir::homePath();
+    const QString path = QFileDialog::getSaveFileName(nullptr,
+                                                      QStringLiteral("导出原始十六进制数据"),
+                                                      QDir(startDir).filePath(defaultName),
+                                                      QStringLiteral("Text files (*.txt);;All files (*.*)"));
+    if (path.isEmpty())
+        return false;
+
+    QString outputPath = path;
+    if (!outputPath.endsWith(QStringLiteral(".txt"), Qt::CaseInsensitive))
+        outputPath += QStringLiteral(".txt");
+
+    QFile file(outputPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        emit exportFailed(QStringLiteral("无法写入文件: %1").arg(outputPath));
+        return false;
+    }
+
+    QTextStream stream(&file);
+    stream.setEncoding(QStringConverter::Utf8);
+    for (const QVariant &item : snapshot) {
+        const QVariantMap frame = item.toMap();
+        const QString rawHex = frameRawHex(frame);
+        if (rawHex.isEmpty())
+            continue;
+        const QString timestamp = frame.value(QStringLiteral("timestamp")).toString().trimmed();
+        const QString direction = frame.value(QStringLiteral("direction")).toString().trimmed();
+        stream << (timestamp.isEmpty() ? QStringLiteral("-") : timestamp)
+               << QLatin1Char(' ')
+               << (direction.isEmpty() ? QStringLiteral("-") : direction)
+               << QLatin1Char(' ')
+               << rawHex
+               << Qt::endl;
+    }
+
+    emit exportFinished(QDir::toNativeSeparators(outputPath));
+    return true;
 }
 
 QHash<int, QByteArray> DataMonitorModel::roleNames() const
@@ -401,6 +537,16 @@ void DataMonitorModel::enqueueFrame(const QVariantMap &frame)
     m_displayQueue.enqueue(frame);
 }
 
+void DataMonitorModel::enqueueFrames(const QList<QVariantMap> &frames)
+{
+    if (frames.isEmpty())
+        return;
+
+    QMutexLocker lock(&m_mutex);
+    for (const QVariantMap &frame : frames)
+        m_displayQueue.enqueue(frame);
+}
+
 void DataMonitorModel::clear()
 {
     beginResetModel();
@@ -434,12 +580,44 @@ void DataMonitorModel::appendFramesSorted(const QList<QVariantMap> &frames)
     if (frames.isEmpty())
         return;
 
-    beginResetModel();
+    QList<QVariant> preparedFrames;
+    preparedFrames.reserve(frames.size());
 
     for (QVariantMap frame : frames) {
         frame[SequenceKey] = m_nextSequence++;
-        m_allFrames.append(frame);
+        preparedFrames.append(frame);
     }
+
+    std::stable_sort(preparedFrames.begin(), preparedFrames.end(), frameTimestampLess);
+
+    const bool canFastAppend = m_filterText.isEmpty()
+        && canAppendInTimestampOrder(m_allFrames, preparedFrames)
+        && (m_allFrames.size() + preparedFrames.size() - MAX_FRAMES <= m_allFrames.size());
+
+    if (canFastAppend) {
+        const int overflow = qMax(0, m_allFrames.size() + preparedFrames.size() - MAX_FRAMES);
+        if (overflow > 0) {
+            beginRemoveRows(QModelIndex(), 0, overflow - 1);
+            for (int i = 0; i < overflow; ++i)
+                m_allFrames.removeFirst();
+            endRemoveRows();
+        }
+
+        const int firstRow = m_allFrames.size();
+        const int lastRow = firstRow + preparedFrames.size() - 1;
+        beginInsertRows(QModelIndex(), firstRow, lastRow);
+        for (const QVariant &frame : preparedFrames)
+            m_allFrames.append(frame);
+        endInsertRows();
+
+        emit countChanged();
+        return;
+    }
+
+    beginResetModel();
+
+    for (const QVariant &frame : preparedFrames)
+        m_allFrames.append(frame);
 
     std::stable_sort(m_allFrames.begin(), m_allFrames.end(), frameTimestampLess);
 

@@ -57,3 +57,6 @@ config/settings.ini
 # IDE temp
 *.autosave
 *.creator.user
+
+# Local automation scratch
+.agents/

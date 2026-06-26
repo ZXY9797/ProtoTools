@@ -48,6 +48,8 @@ constexpr int DEFAULT_ENTER_UPGRADE_DELAY_MS = 1000;
 constexpr int DEFAULT_REBOOT_DELAY_MS = 10;
 constexpr int DEFAULT_RUNTIME_SWITCH_TIMEOUT_MS = 5000;
 constexpr int USB_RUNTIME_SWITCH_TIMEOUT_MS = 15000;
+constexpr int UART_RUNTIME_SWITCH_TIMEOUT_MS = 45000;
+constexpr int UPGRADE_CONNECTION_HOLD_TIMEOUT_MS = 60000;
 constexpr int RUNTIME_POLL_INTERVAL_MS = 300;
 constexpr quint32 FIRMWARE_TYPE_APP = 0;
 constexpr quint32 FIRMWARE_TYPE_BOOTLOADER = 1;
@@ -76,6 +78,38 @@ QString canHelperScriptPath()
             return QDir::toNativeSeparators(candidate);
     }
     return {};
+}
+
+bool isUsbLink(ConnectionManager *manager)
+{
+    return manager && manager->linkType() == QStringLiteral("USB");
+}
+
+bool isUartLink(ConnectionManager *manager)
+{
+    return manager && manager->linkType() == QStringLiteral("UART");
+}
+
+bool needsRuntimeReconnect(ConnectionManager *manager)
+{
+    if (!manager)
+        return false;
+    const QString linkType = manager->linkType();
+    return linkType == QStringLiteral("USB") || linkType == QStringLiteral("UART");
+}
+
+int runtimeSwitchTimeoutMs(ConnectionManager *manager)
+{
+    if (isUartLink(manager))
+        return UART_RUNTIME_SWITCH_TIMEOUT_MS;
+    if (isUsbLink(manager))
+        return USB_RUNTIME_SWITCH_TIMEOUT_MS;
+    return DEFAULT_RUNTIME_SWITCH_TIMEOUT_MS;
+}
+
+bool transportOpen(ConnectionManager *manager)
+{
+    return manager && manager->transportOpen();
 }
 
 } // namespace
@@ -163,11 +197,11 @@ void FirmwareUpgradeManager::queryDevice()
         return;
     if (m_connectionManager
         && m_connectionManager->linkType() == QStringLiteral("CAN")
-        && !m_connectionManager->isConnected()) {
+        && !transportOpen(m_connectionManager)) {
         queryDeviceViaCanHelper();
         return;
     }
-    if (!m_connectionManager || !m_connectionManager->isConnected()) {
+    if (!transportOpen(m_connectionManager)) {
         fail(QStringLiteral("link is not connected"));
         return;
     }
@@ -287,7 +321,7 @@ void FirmwareUpgradeManager::ping()
 {
     if (m_running)
         return;
-    if (!m_connectionManager || !m_connectionManager->isConnected()) {
+    if (!transportOpen(m_connectionManager)) {
         fail(QStringLiteral("link is not connected"));
         return;
     }
@@ -451,6 +485,7 @@ void FirmwareUpgradeManager::startUpgrade()
 {
     if (m_running)
         return;
+    setUpgradeConnectionHold(true);
     m_stressMode = false;
     m_stressTotal = 0;
     m_stressCurrent = 0;
@@ -464,6 +499,7 @@ void FirmwareUpgradeManager::startStressUpgrade(int count)
     if (m_running)
         return;
 
+    setUpgradeConnectionHold(true);
     m_stressMode = true;
     m_stressTotal = std::clamp(count, 1, 9999);
     m_stressCurrent = 0;
@@ -476,16 +512,16 @@ void FirmwareUpgradeManager::beginUpgradeOnce()
 {
     if (m_connectionManager
         && m_connectionManager->linkType() == QStringLiteral("CAN")
-        && !m_connectionManager->isConnected()) {
+        && !transportOpen(m_connectionManager)) {
         startUpgradeViaCanHelper();
         return;
     }
-    if (!m_connectionManager || !m_connectionManager->isConnected()) {
+    if (!transportOpen(m_connectionManager)) {
         if (m_connectionManager
-            && m_connectionManager->linkType() == QStringLiteral("USB")
+            && needsRuntimeReconnect(m_connectionManager)
             && m_stressMode
             && m_running) {
-            waitRuntime(RUNTIME_APP, USB_RUNTIME_SWITCH_TIMEOUT_MS, [this]() {
+            waitRuntime(RUNTIME_APP, runtimeSwitchTimeoutMs(m_connectionManager), [this]() {
                 beginUpgradeOnce();
             });
             return;
@@ -531,6 +567,7 @@ void FirmwareUpgradeManager::startNextStressIteration()
         m_stressMode = false;
         if (m_connectionManager)
             m_connectionManager->setErrorReportingSuppressed(false);
+        setUpgradeConnectionHold(false);
         setProgress(100);
         setStatus(QStringLiteral("upgrade stress complete %1/%2").arg(m_stressPassed).arg(m_stressTotal));
         setRunning(false);
@@ -549,6 +586,7 @@ void FirmwareUpgradeManager::finishSuccessfulUpgrade()
     if (!m_stressMode) {
         if (m_connectionManager)
             m_connectionManager->setErrorReportingSuppressed(false);
+        setUpgradeConnectionHold(false);
         setUpgradeSuccessCount(1);
         setStatus(QStringLiteral("upgrade complete"));
         setRunning(false);
@@ -560,6 +598,7 @@ void FirmwareUpgradeManager::finishSuccessfulUpgrade()
         m_stressMode = false;
         if (m_connectionManager)
             m_connectionManager->setErrorReportingSuppressed(false);
+        setUpgradeConnectionHold(false);
         setStatus(QStringLiteral("upgrade stress complete %1/%2").arg(m_stressPassed).arg(m_stressTotal));
         setRunning(false);
         return;
@@ -585,6 +624,7 @@ void FirmwareUpgradeManager::cancel()
     }
     if (m_connectionManager)
         m_connectionManager->setErrorReportingSuppressed(false);
+    setUpgradeConnectionHold(false);
     clearPendingRequest();
     setRunning(false);
     setStatus(QStringLiteral("cancelled"));
@@ -728,6 +768,8 @@ void FirmwareUpgradeManager::fail(const QString &message)
     const bool wasStress = m_stressMode;
     const int failedIteration = m_stressCurrent;
     const int totalIterations = m_stressTotal;
+    const bool restoreReconnectLink = message == QStringLiteral("runtime mode did not switch")
+        && needsRuntimeReconnect(m_connectionManager);
     if (m_stressMode) {
         m_stressMode = false;
     }
@@ -739,6 +781,15 @@ void FirmwareUpgradeManager::fail(const QString &message)
         m_connectionManager->setErrorReportingSuppressed(false);
     clearPendingRequest();
     setRunning(false);
+    if (restoreReconnectLink) {
+        QTimer::singleShot(0, this, [this]() {
+            if (m_connectionManager && !m_connectionManager->transportOpen())
+                m_connectionManager->openConnection(false);
+            setUpgradeConnectionHold(false);
+        });
+    } else {
+        setUpgradeConnectionHold(false);
+    }
     if (wasStress) {
         setStatus(QStringLiteral("error: stress %1/%2 failed: %3")
                       .arg(failedIteration)
@@ -748,6 +799,13 @@ void FirmwareUpgradeManager::fail(const QString &message)
         setStatus(QStringLiteral("error: %1").arg(message));
     }
     emit errorOccurred(message);
+}
+
+void FirmwareUpgradeManager::setUpgradeConnectionHold(bool enabled)
+{
+    if (!m_connectionManager)
+        return;
+    m_connectionManager->setConnectionStateHold(enabled, UPGRADE_CONNECTION_HOLD_TIMEOUT_MS);
 }
 
 void FirmwareUpgradeManager::resetTransferState()
@@ -820,7 +878,8 @@ void FirmwareUpgradeManager::request(quint16 cmd,
                                      const QByteArray &data,
                                      const QString &context,
                                      ResponseHandler onSuccess,
-                                     FailureHandler onFailure)
+                                     FailureHandler onFailure,
+                                     int retriesOverride)
 {
     if (m_cancelled)
         return;
@@ -832,7 +891,7 @@ void FirmwareUpgradeManager::request(quint16 cmd,
         m_nextSeq = 1;
     m_pendingFrame = buildFrame(cmd, m_pendingSeq, data);
     m_pendingContext = context;
-    m_pendingRetriesLeft = m_retries;
+    m_pendingRetriesLeft = retriesOverride >= 0 ? retriesOverride : m_retries;
     m_pendingReconnectActive = false;
     m_pendingSuccess = std::move(onSuccess);
     m_pendingFailure = std::move(onFailure);
@@ -841,19 +900,22 @@ void FirmwareUpgradeManager::request(quint16 cmd,
 
 void FirmwareUpgradeManager::sendPendingRequest()
 {
-    if (!m_connectionManager || !m_connectionManager->isConnected()) {
+    if (!transportOpen(m_connectionManager)) {
         if (m_connectionManager
-            && m_connectionManager->linkType() == QStringLiteral("USB")
+            && needsRuntimeReconnect(m_connectionManager)
             && m_running
             && m_pendingCmd != 0) {
             if (!m_pendingReconnectActive) {
                 m_pendingReconnectActive = true;
                 m_pendingReconnectTimer.restart();
             }
-            if (m_pendingReconnectTimer.elapsed() < USB_RUNTIME_SWITCH_TIMEOUT_MS) {
-                setStatus(QStringLiteral("wait USB reconnect"));
-                if (auto *usb = m_connectionManager->usbDriver())
-                    usb->setSuppressOpenErrors(true);
+            if (m_pendingReconnectTimer.elapsed() < runtimeSwitchTimeoutMs(m_connectionManager)) {
+                setStatus(QStringLiteral("wait %1 reconnect").arg(m_connectionManager->linkType()));
+                if (isUsbLink(m_connectionManager)) {
+                    auto *usb = m_connectionManager->usbDriver();
+                    if (usb)
+                        usb->setSuppressOpenErrors(true);
+                }
                 m_connectionManager->openConnection(false);
                 QTimer::singleShot(RUNTIME_POLL_INTERVAL_MS, this, [this]() {
                     if (!m_running || m_cancelled || m_pendingCmd == 0)
@@ -890,7 +952,7 @@ void FirmwareUpgradeManager::clearPendingRequest()
     m_pendingFailure = {};
 }
 
-void FirmwareUpgradeManager::queryDeviceInfo(Continuation next, FailureHandler onFailure)
+void FirmwareUpgradeManager::queryDeviceInfo(Continuation next, FailureHandler onFailure, int retriesOverride)
 {
     setStatus(QStringLiteral("get device info"));
     request(CMD_GET_DEVICE_INFO, {}, QStringLiteral("get device info"),
@@ -943,12 +1005,12 @@ void FirmwareUpgradeManager::queryDeviceInfo(Continuation next, FailureHandler o
             onFailure(message);
         else
             fail(message);
-    });
+    }, retriesOverride);
 }
 
 void FirmwareUpgradeManager::queryRuntime(std::function<void(int)> next, FailureHandler onFailure)
 {
-    if (!m_connectionManager || !m_connectionManager->isConnected()) {
+    if (!transportOpen(m_connectionManager)) {
         if (onFailure)
             onFailure(QStringLiteral("link disconnected"));
         else
@@ -960,7 +1022,7 @@ void FirmwareUpgradeManager::queryRuntime(std::function<void(int)> next, Failure
         const int runtime = m_deviceInfo.runtimeMode;
         if (next)
             next(runtime);
-    }, std::move(onFailure));
+    }, std::move(onFailure), 0);
 }
 
 void FirmwareUpgradeManager::requestEnterUpgrade(quint8 requestedMode, std::function<void(const EnterUpgradeInfo &)> next)
@@ -997,8 +1059,8 @@ void FirmwareUpgradeManager::reboot(int mode, Continuation next)
             return;
         }
         setStatus(QStringLiteral("rebooting"));
-        if (m_connectionManager && m_connectionManager->linkType() == QStringLiteral("USB"))
-            m_connectionManager->closeConnection();
+        if (needsRuntimeReconnect(m_connectionManager))
+            m_connectionManager->closeConnection(false);
         if (next)
             QTimer::singleShot(rebootDelayMs, this, std::move(next));
     });
@@ -1029,11 +1091,15 @@ void FirmwareUpgradeManager::pollRuntime()
         QTimer::singleShot(RUNTIME_POLL_INTERVAL_MS, this, &FirmwareUpgradeManager::pollRuntime);
     };
 
-    if (!m_connectionManager || !m_connectionManager->isConnected()) {
-        if (m_connectionManager && m_connectionManager->linkType() == QStringLiteral("USB")) {
-            setStatus(QStringLiteral("wait runtime=%1 reconnect USB").arg(runtimeName(m_waitRuntimeExpected)));
-            if (auto *usb = m_connectionManager->usbDriver())
-                usb->setSuppressOpenErrors(true);
+    if (!transportOpen(m_connectionManager)) {
+        if (needsRuntimeReconnect(m_connectionManager)) {
+            setStatus(QStringLiteral("wait runtime=%1 reconnect %2")
+                          .arg(runtimeName(m_waitRuntimeExpected), m_connectionManager->linkType()));
+            if (isUsbLink(m_connectionManager)) {
+                auto *usb = m_connectionManager->usbDriver();
+                if (usb)
+                    usb->setSuppressOpenErrors(true);
+            }
             m_connectionManager->openConnection(false);
             retryLater();
             return;
@@ -1044,8 +1110,9 @@ void FirmwareUpgradeManager::pollRuntime()
 
     queryRuntime([this](int runtime) {
         if (runtime == m_waitRuntimeExpected) {
-            if (m_connectionManager && m_connectionManager->linkType() == QStringLiteral("USB")) {
-                if (auto *usb = m_connectionManager->usbDriver())
+            if (isUsbLink(m_connectionManager)) {
+                auto *usb = m_connectionManager->usbDriver();
+                if (usb)
                     usb->setSuppressOpenErrors(false);
             }
             auto cont = std::move(m_waitRuntimeContinuation);
@@ -1061,8 +1128,8 @@ void FirmwareUpgradeManager::pollRuntime()
         }
         QTimer::singleShot(RUNTIME_POLL_INTERVAL_MS, this, &FirmwareUpgradeManager::pollRuntime);
     }, [this](const QString &) {
-        if (m_connectionManager && m_connectionManager->linkType() == QStringLiteral("USB"))
-            m_connectionManager->closeConnection();
+        if (needsRuntimeReconnect(m_connectionManager))
+            m_connectionManager->closeConnection(false);
         if (m_waitRuntimeTimer.elapsed() >= m_waitRuntimeTimeoutMs) {
             fail(QStringLiteral("runtime mode did not switch"));
             return;
@@ -1077,8 +1144,8 @@ void FirmwareUpgradeManager::reopenLinkAndEnterUpgrade(quint8 requestedMode, con
                                                       : DEFAULT_ENTER_UPGRADE_DELAY_MS;
     setStatus(QStringLiteral("wait enter upgrade %1 ms").arg(delayMs));
     clearPendingRequest();
-    if (m_connectionManager)
-        m_connectionManager->closeConnection();
+    if (needsRuntimeReconnect(m_connectionManager))
+        m_connectionManager->closeConnection(false);
 
     QTimer::singleShot(delayMs, this, [this, requestedMode]() {
         if (!m_running || m_cancelled)
@@ -1087,10 +1154,7 @@ void FirmwareUpgradeManager::reopenLinkAndEnterUpgrade(quint8 requestedMode, con
             fail(QStringLiteral("link is not connected"));
             return;
         }
-        const int timeoutMs = m_connectionManager
-                && m_connectionManager->linkType() == QStringLiteral("USB")
-            ? USB_RUNTIME_SWITCH_TIMEOUT_MS
-            : DEFAULT_RUNTIME_SWITCH_TIMEOUT_MS;
+        const int timeoutMs = runtimeSwitchTimeoutMs(m_connectionManager);
         waitRuntime(RUNTIME_BOOTLOADER, timeoutMs, [this, requestedMode]() {
             requestEnterUpgrade(requestedMode, [this](const EnterUpgradeInfo &updated) {
                 m_upgradeTiming = updated;
@@ -1210,10 +1274,7 @@ void FirmwareUpgradeManager::rebootToApp()
 {
     setStatus(QStringLiteral("reboot to app"));
     reboot(REBOOT_NORMAL, [this]() {
-        const int timeoutMs = m_connectionManager
-                && m_connectionManager->linkType() == QStringLiteral("USB")
-            ? USB_RUNTIME_SWITCH_TIMEOUT_MS
-            : DEFAULT_RUNTIME_SWITCH_TIMEOUT_MS;
+        const int timeoutMs = runtimeSwitchTimeoutMs(m_connectionManager);
         waitRuntime(RUNTIME_APP, timeoutMs, [this]() {
             queryDeviceInfo([this]() {
                 completeUpgrade();
@@ -1224,8 +1285,9 @@ void FirmwareUpgradeManager::rebootToApp()
 
 void FirmwareUpgradeManager::completeUpgrade()
 {
-    if (m_connectionManager && m_connectionManager->linkType() == QStringLiteral("USB")) {
-        if (auto *usb = m_connectionManager->usbDriver())
+    if (isUsbLink(m_connectionManager)) {
+        auto *usb = m_connectionManager->usbDriver();
+        if (usb)
             usb->setSuppressOpenErrors(false);
     }
     if (m_targetImageVersion != MISSING_VERSION && m_deviceInfo.appVersion != m_targetImageVersion) {

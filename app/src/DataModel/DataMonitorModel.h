@@ -52,6 +52,7 @@ public:
     QHash<int, QByteArray> roleNames() const override;
     Q_INVOKABLE QVariantMap frameAt(int row) const;
     Q_INVOKABLE QVariantList frames(int maxCount = 1000) const;
+    Q_INVOKABLE bool exportRawHex(const QString &linkType, const QString &linkInfo = QString());
 
     bool isPaused() const { return m_paused; }
     void setPaused(bool paused);
@@ -68,6 +69,7 @@ public:
 public slots:
     void addFrame(const QVariantMap &frame);
     void enqueueFrame(const QVariantMap &frame);  // 外部入队（Lua 过滤后调用）
+    void enqueueFrames(const QList<QVariantMap> &frames);
     void clear();
     void refreshFromQueue();  // 从待显示队列拉取帧并刷新 UI
 
@@ -77,6 +79,8 @@ signals:
     void filterTextChanged();
     void refreshIntervalChanged();
     void commandEchoEnabledChanged();
+    void exportFinished(const QString &path);
+    void exportFailed(const QString &message);
 
 private:
     bool matchesFilter(const QVariantMap &frame) const;
