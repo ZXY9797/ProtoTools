@@ -83,11 +83,11 @@ Item {
             Layout.preferredWidth: 1
             implicitHeight: root.controlHeight
             font.pixelSize: 11
-            color: "#E6EAF0"
+            color: themeManager.isDark ? "#E6EAF0" : "#111827"
             validator: IntValidator { bottom: 0; top: 32 }
             background: Rectangle {
-                color: "#22272E"
-                border.color: ifaceField.activeFocus ? "#7AB7FF" : "#3A424C"
+                color: themeManager.isDark ? "#22272E" : "#F9FAFB"
+                border.color: ifaceField.activeFocus ? (themeManager.isDark ? "#7AB7FF" : "#2563EB") : (themeManager.isDark ? "#3A424C" : "#D1D5DB")
                 radius: 6
             }
             onTextEdited: {
@@ -105,11 +105,11 @@ Item {
             Layout.preferredWidth: 1
             implicitHeight: root.controlHeight
             font.pixelSize: 11
-            color: "#E6EAF0"
+            color: themeManager.isDark ? "#E6EAF0" : "#111827"
             validator: IntValidator { bottom: 64; top: 65536 }
             background: Rectangle {
-                color: "#22272E"
-                border.color: readLenField.activeFocus ? "#7AB7FF" : "#3A424C"
+                color: themeManager.isDark ? "#22272E" : "#F9FAFB"
+                border.color: readLenField.activeFocus ? (themeManager.isDark ? "#7AB7FF" : "#2563EB") : (themeManager.isDark ? "#3A424C" : "#D1D5DB")
                 radius: 6
             }
             onTextEdited: {
@@ -158,7 +158,7 @@ Item {
     component UsbLabel: Label {
         Layout.preferredWidth: 44
         Layout.alignment: Qt.AlignVCenter
-        color: "#AEB7C2"
+        color: themeManager.isDark ? "#AEB7C2" : "#6B7280"
         font.pixelSize: 11
         horizontalAlignment: Text.AlignRight
         verticalAlignment: Text.AlignVCenter
@@ -174,10 +174,10 @@ Item {
         implicitHeight: root.controlHeight
         font.pixelSize: 11
         font.family: "Menlo"
-        color: "#E6EAF0"
+        color: themeManager.isDark ? "#E6EAF0" : "#111827"
         background: Rectangle {
-            color: "#22272E"
-            border.color: usbFieldControl.activeFocus ? "#7AB7FF" : "#3A424C"
+            color: themeManager.isDark ? "#22272E" : "#F9FAFB"
+            border.color: usbFieldControl.activeFocus ? (themeManager.isDark ? "#7AB7FF" : "#2563EB") : (themeManager.isDark ? "#3A424C" : "#D1D5DB")
             radius: 6
         }
         onTextEdited: {

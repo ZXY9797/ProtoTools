@@ -25,20 +25,20 @@ Rectangle {
     property var quickResponseFrame: ({})
     property string quickResponseStatus: "发送快捷指令后显示当前回包"
     readonly property int responseTimeoutMs: 3000
-    property color pageBg: "#101419"
-    property color surface: "#171D24"
-    property color surfaceRaised: "#1B222B"
-    property color surfaceSoft: "#202832"
-    property color outline: "#303B47"
-    property color outlineStrong: "#465A6F"
-    property color textPrimary: "#E7EDF4"
-    property color textSecondary: "#A4AFBC"
-    property color textMuted: "#778390"
-    property color accent: "#2F8DFF"
-    property color accentHover: "#3C9BFF"
-    property color success: "#5EE0C2"
-    property color warning: "#D4A83B"
-    property color danger: "#FF7F8D"
+    property color pageBg: themeManager.isDark ? "#0C1017" : "#F8F9FB"
+    property color surface: themeManager.isDark ? "#131920" : "#FFFFFF"
+    property color surfaceRaised: themeManager.isDark ? "#1A222C" : "#F3F4F6"
+    property color surfaceSoft: themeManager.isDark ? "#0F141B" : "#F9FAFB"
+    property color outline: themeManager.isDark ? "#253040" : "#D1D5DB"
+    property color outlineStrong: themeManager.isDark ? "#384858" : "#9CA3AF"
+    property color textPrimary: themeManager.isDark ? "#E8EDF5" : "#111827"
+    property color textSecondary: themeManager.isDark ? "#9CAAB8" : "#6B7280"
+    property color textMuted: themeManager.isDark ? "#607080" : "#9CA3AF"
+    property color accent: themeManager.isDark ? "#3B8AFF" : "#2563EB"
+    property color accentHover: themeManager.isDark ? "#509AFF" : "#3B82F6"
+    property color success: themeManager.isDark ? "#34D399" : "#059669"
+    property color warning: themeManager.isDark ? "#FBBF24" : "#D97706"
+    property color danger: themeManager.isDark ? "#F87171" : "#DC2626"
 
     function loadTextValue(key, defaultValue) {
         var value = settingsManager.loadValue(key, defaultValue)
@@ -54,8 +54,8 @@ Rectangle {
 
     // 表单参数保存
     Component.onCompleted: {
-        srcField.text = loadTextValue("protoeditor.src", "0x0001")
-        dstField.text = loadTextValue("protoeditor.dst", "0x0500")
+        srcField.text = loadTextValue("protoeditor.src", "0x10")
+        dstField.text = loadTextValue("protoeditor.dst", "0x05")
         seqField.text = loadTextValue("protoeditor.seq", "0005")
         cmdsetField.text = loadTextValue("protoeditor.cmdset", "0x00")
         cmdidField.text = loadTextValue("protoeditor.cmdid", "0x01")
@@ -97,29 +97,29 @@ Rectangle {
             color: root.surfaceRaised
             border.color: root.outlineStrong
             border.width: 1
-            radius: 6
+            radius: 8
         }
 
         contentItem: ColumnLayout {
             spacing: 0
             Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 24; color: "#111820"
+                Layout.fillWidth: true; Layout.preferredHeight: 24; color: surface
                 RowLayout {
                     anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 6
                     Text { text: "发送历史（点击填入表单）"; color: root.accentHover; font.pixelSize: 11; font.weight: Font.Medium }
                     Item { Layout.fillWidth: true }
-                    Text { text: historyModel.count + " 条"; color: "#555555"; font.pixelSize: 10 }
+                    Text { text: historyModel.count + " 条"; color: textMuted; font.pixelSize: 10 }
                     Rectangle {
                         width: 42; height: 18; radius: 5
-                        color: popClearMouse.containsMouse ? "#C84654" : "#3A1E25"
-                        border.color: popClearMouse.containsMouse ? "#FF8A98" : "#7D3A47"
-                        Text { anchors.centerIn: parent; text: "清空"; color: "#FFD9DE"; font.pixelSize: 10; font.weight: Font.Medium }
+                        color: popClearMouse.containsMouse ? (themeManager.isDark ? "#7F1D1D" : "#FEE2E2") : (themeManager.isDark ? "#2D1520" : "#FEF2F2")
+                        border.color: popClearMouse.containsMouse ? danger : (themeManager.isDark ? "#5B2135" : "#FECDD3")
+                        Text { anchors.centerIn: parent; text: "清空"; color: popClearMouse.containsMouse ? (themeManager.isDark ? "#FECDD3" : "#DC2626") : (themeManager.isDark ? "#FECDD3" : "#6B7280"); font.pixelSize: 10; font.weight: Font.Medium }
                         MouseArea { id: popClearMouse; anchors.fill: parent; hoverEnabled: true; onClicked: { historyModel.clear(); historyPopup.close() } }
                     }
                 }
             }
             Rectangle {
-                Layout.fillWidth: true; Layout.preferredHeight: 18; color: "#151B22"
+                Layout.fillWidth: true; Layout.preferredHeight: 18; color: surfaceSoft
                 Row { anchors.fill: parent; spacing: 0
                     PopHdr { text: "#"; width: 24 } PopHdr { text: "时间"; width: 56 }
                     PopHdr { text: "Src"; width: 50 } PopHdr { text: "Dst"; width: 50 }
@@ -132,16 +132,16 @@ Rectangle {
                 clip: true; model: historyModel; currentIndex: -1
                 delegate: Rectangle {
                     width: popupList.width; height: 20
-                    color: popMouse.containsMouse ? "#20344B" : (index % 2 === 0 ? root.surfaceRaised : root.surfaceSoft)
+                    color: popMouse.containsMouse ? (themeManager.isDark ? "#1A3050" : "#DBEAFE") : (index % 2 === 0 ? root.surfaceRaised : root.surfaceSoft)
                     Row { anchors.fill: parent; spacing: 0
-                        PopCell { text: (index + 1).toString(); width: 24; color: "#555" }
-                        PopCell { text: model.timestamp || ""; width: 56; color: "#888" }
-                        PopCell { text: root.displayHexText(model.src || ""); width: 50; color: "#9CDCFE" }
-                        PopCell { text: root.displayHexText(model.dst || ""); width: 50; color: "#9CDCFE" }
-                        PopCell { text: model.seq || ""; width: 36; color: "#569CD6" }
-                        PopCell { text: root.displayHexText(model.cmdset || ""); width: 36; color: "#C586C0" }
-                        PopCell { text: root.displayHexText(model.cmdid || ""); width: 36; color: "#DCDCAA" }
-                        PopCell { text: root.displayHexText(model.data || ""); width: Math.max(50, popupList.width - 294); color: "#D4D4D4"; elide: Text.ElideRight }
+                        PopCell { text: (index + 1).toString(); width: 24; color: textMuted }
+                        PopCell { text: model.timestamp || ""; width: 56; color: textMuted }
+                        PopCell { text: root.displayHexText(model.src || ""); width: 50; color: themeManager.isDark ? "#9CDCFE" : "#3B82F6" }
+                        PopCell { text: root.displayHexText(model.dst || ""); width: 50; color: themeManager.isDark ? "#9CDCFE" : "#3B82F6" }
+                        PopCell { text: model.seq || ""; width: 36; color: themeManager.isDark ? "#569CD6" : "#60A5FA" }
+                        PopCell { text: root.displayHexText(model.cmdset || ""); width: 36; color: themeManager.isDark ? "#C586C0" : "#8B5CF6" }
+                        PopCell { text: root.displayHexText(model.cmdid || ""); width: 36; color: themeManager.isDark ? "#DCDCAA" : "#F59E0B" }
+                        PopCell { text: root.displayHexText(model.data || ""); width: Math.max(50, popupList.width - 294); color: textPrimary; elide: Text.ElideRight }
                     }
                     MouseArea {
                         id: popMouse; anchors.fill: parent; hoverEnabled: true
@@ -170,7 +170,7 @@ Rectangle {
             color: root.surfaceRaised
             border.color: root.outlineStrong
             border.width: 1
-            radius: 8
+            radius: 10
         }
 
         contentItem: ColumnLayout {
@@ -179,8 +179,8 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 34
-                radius: 8
-                color: "#111820"
+                radius: 10
+                color: "#0F1620"
 
                 Text {
                     anchors.left: parent.left
@@ -212,7 +212,7 @@ Rectangle {
                     implicitHeight: 30
                     selectByMouse: true
                     color: root.textPrimary
-                    selectedTextColor: "#08121B"
+                    selectedTextColor: "#FFFFFF"
                     selectionColor: root.accentHover
                     font.pixelSize: 12
                     background: Rectangle {
@@ -303,7 +303,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
-            color: "#111820"
+            color: surface
 
             RowLayout {
                 anchors.fill: parent
@@ -313,10 +313,10 @@ Rectangle {
                 anchors.bottomMargin: 4
                 spacing: 6
 
-                ToolTab { label: "固件升级"; tabIndex: 0; accentColor: "#48D1B5" }
-                ToolTab { label: "协议编辑"; tabIndex: 1; accentColor: "#7AB7FF" }
-                ToolTab { label: "快捷指令"; tabIndex: 2; accentColor: "#C58AF9" }
-                ToolTab { label: "协议校验"; tabIndex: 3; accentColor: "#D4A83B" }
+                ToolTab { label: "固件升级"; tabIndex: 0; accentColor: themeManager.isDark ? "#48D1B5" : "#059669" }
+                ToolTab { label: "协议编辑"; tabIndex: 1; accentColor: themeManager.isDark ? "#7AB7FF" : "#3B82F6" }
+                ToolTab { label: "快捷指令"; tabIndex: 2; accentColor: themeManager.isDark ? "#C58AF9" : "#8B5CF6" }
+                ToolTab { label: "协议校验"; tabIndex: 3; accentColor: themeManager.isDark ? "#D4A83B" : "#D97706" }
                 Item { Layout.fillWidth: true }
             }
 
@@ -325,7 +325,7 @@ Rectangle {
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 height: 1
-                color: "#25303B"
+                color: outline
             }
         }
 
@@ -369,13 +369,13 @@ Rectangle {
                                 ProtoLabel { text: "Src" }
                                 ProtoTextField {
                                     id: srcField
-                                    text: "0x0001"
+                                    text: "0x10"
                                     onTextChanged: { updatePreview(); if (!root._restoring) settingsManager.saveValue("protoeditor.src", text) }
                                 }
                                 ProtoLabel { text: "Dst" }
                                 ProtoTextField {
                                     id: dstField
-                                    text: "0x0002"
+                                    text: "0x05"
                                     onTextChanged: { updatePreview(); if (!root._restoring) settingsManager.saveValue("protoeditor.dst", text) }
                                 }
 
@@ -421,7 +421,7 @@ Rectangle {
                                     TextArea {
                                         id: dataField; text: "01 02 03 04 05 06 07 08"
                                         font.pixelSize: 10; font.family: "Menlo"
-                                        color: "#D4D4D4"; wrapMode: TextArea.Wrap; selectByMouse: true; background: null
+                                        color: textPrimary; wrapMode: TextArea.Wrap; selectByMouse: true; background: null
                                         onTextChanged: { updatePreview(); if (!root._restoring) settingsManager.saveValue("protoeditor.data", text) }
                                     }
                                 }
@@ -430,11 +430,11 @@ Rectangle {
                             // CRC
                             RowLayout {
                                 Layout.fillWidth: true; spacing: 4
-                                Text { text: "CRC8"; color: "#AAAAAA"; font.pixelSize: 11; Layout.preferredWidth: 36; verticalAlignment: Text.AlignVCenter }
-                                Text { id: crc8Display; text: "auto"; color: "#666666"; font.pixelSize: 10; font.family: "Menlo" }
+                                Text { text: "BCC"; color: "#AAAAAA"; font.pixelSize: 11; Layout.preferredWidth: 36; verticalAlignment: Text.AlignVCenter }
+                                Text { id: bccDisplay; text: "auto"; color: textMuted; font.pixelSize: 10; font.family: "Menlo" }
                                 Item { width: 8; height: 1 }
                                 Text { text: "CRC16"; color: "#AAAAAA"; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter }
-                                Text { id: crc16Display; text: "auto"; color: "#666666"; font.pixelSize: 10; font.family: "Menlo" }
+                                Text { id: crc16Display; text: "auto"; color: textMuted; font.pixelSize: 10; font.family: "Menlo" }
                                 Item { Layout.fillWidth: true }
                                 Button {
                                     text: "加入快捷"
@@ -446,12 +446,12 @@ Rectangle {
                                     font.weight: Font.Medium
                                     background: Rectangle {
                                         radius: 6
-                                        color: parent.hovered ? "#2F8DFF" : "#1C3147"
-                                        border.color: parent.hovered ? "#5DAAFF" : "#31506D"
+                                        color: parent.hovered ? accent : (themeManager.isDark ? "#1C3147" : "#DBEAFE")
+                                        border.color: parent.hovered ? (themeManager.isDark ? "#5DAAFF" : "#93C5FD") : (themeManager.isDark ? "#31506D" : "#93C5FD")
                                     }
                                     contentItem: Text {
                                         text: parent.text
-                                        color: parent.hovered ? "#FFFFFF" : "#BFD7F2"
+                                        color: parent.hovered ? "#FFFFFF" : (themeManager.isDark ? "#BFD7F2" : "#1D4ED8")
                                         font: parent.font
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
@@ -464,7 +464,7 @@ Rectangle {
                             // Hex 预览
                             ColumnLayout {
                                 Layout.fillWidth: true; Layout.topMargin: 1; spacing: 2
-                                Text { text: "预览 Hex (可选中复制)"; color: "#666666"; font.pixelSize: 9 }
+                                Text { text: "预览 Hex (可选中复制)"; color: textMuted; font.pixelSize: 9 }
                                 ScrollView {
                                     id: hexPreviewScroll
                                     Layout.fillWidth: true
@@ -474,10 +474,10 @@ Rectangle {
                                     clip: true
                                     ScrollBar.vertical.policy: ScrollBar.AsNeeded
                                     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                                    background: Rectangle { color: "#111820"; border.color: root.outline; radius: 5 }
+                                    background: Rectangle { color: surface; border.color: root.outline; radius: 5 }
                                     TextArea {
                                         id: hexPreview; text: ""; readOnly: true; selectByMouse: true
-                                        color: "#4EC9B0"; font.pixelSize: 9; font.family: "Menlo"
+                                        color: success; font.pixelSize: 9; font.family: "Menlo"
                                         width: hexPreviewScroll.availableWidth
                                         wrapMode: TextArea.Wrap
                                         leftPadding: 8
@@ -516,16 +516,16 @@ Rectangle {
 
                 // ---- 底部发送栏 ----
                 Rectangle {
-                    Layout.fillWidth: true; Layout.preferredHeight: 30; color: "#111820"
+                    Layout.fillWidth: true; Layout.preferredHeight: 30; color: surface
                     RowLayout {
                         anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; spacing: 6
                         Button {
                             text: "📤 发送"; font.pixelSize: 11; padding: 3; leftPadding: 14; rightPadding: 14
-                            background: Rectangle { radius: 3; color: "#0E639C" }
+                            background: Rectangle { radius: 3; color: themeManager.isDark ? "#0E639C" : "#2563EB" }
                             contentItem: Text { text: parent.text; color: "#FFFFFF"; font: parent.font }
                             onClicked: sendFrame()
                         }
-                        Text { id: lastSendInfo; text: "最近: —"; color: "#666666"; font.pixelSize: 10 }
+                        Text { id: lastSendInfo; text: "最近: —"; color: textMuted; font.pixelSize: 10 }
                         Item { Layout.fillWidth: true }
                         Button {
                             id: historyBtn
@@ -589,17 +589,17 @@ Rectangle {
                         Layout.maximumHeight: 50
                         clip: true
                         background: Rectangle {
-                            color: "#1B222A"
-                            border.color: protocolCheckInput.activeFocus ? "#2F8DFF" : "#35404C"
+                            color: surface
+                            border.color: protocolCheckInput.activeFocus ? accent : outline
                             radius: 6
                         }
                         TextArea {
                             id: protocolCheckInput
-                            color: "#DDE5EE"
-                            selectionColor: "#245A8D"
+                            color: textPrimary
+                            selectionColor: accent
                             selectedTextColor: "#FFFFFF"
                             placeholderText: "AA 01 ..."
-                            placeholderTextColor: "#66717E"
+                            placeholderTextColor: textMuted
                             font.pixelSize: 11
                             font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
                             wrapMode: TextArea.Wrap
@@ -622,7 +622,7 @@ Rectangle {
                         onClicked: validateProtocolInput()
                         contentItem: Text {
                             text: protocolCheckButton.text
-                            color: "#F7FBFF"
+                            color: "#FFFFFF"
                             font.pixelSize: 12
                             font.weight: Font.Medium
                             horizontalAlignment: Text.AlignHCenter
@@ -630,8 +630,8 @@ Rectangle {
                         }
                         background: Rectangle {
                             radius: 6
-                            color: protocolCheckButton.down ? "#1D5E99" : (protocolCheckButton.hovered ? "#2878C6" : "#236EA9")
-                            border.color: "#55A9F8"
+                            color: protocolCheckButton.down ? (themeManager.isDark ? "#1D5E99" : "#1D4ED8") : (protocolCheckButton.hovered ? (themeManager.isDark ? "#2878C6" : "#3B82F6") : accent)
+                            border.color: themeManager.isDark ? "#55A9F8" : "#93C5FD"
                         }
                     }
                     Button {
@@ -642,15 +642,15 @@ Rectangle {
                         onClicked: protocolCheckInput.clear()
                         contentItem: Text {
                             text: protocolClearButton.text
-                            color: "#DDE5EE"
+                            color: textPrimary
                             font.pixelSize: 12
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
                         background: Rectangle {
                             radius: 6
-                            color: protocolClearButton.down ? "#303944" : (protocolClearButton.hovered ? "#35404C" : "#252C34")
-                            border.color: "#465463"
+                            color: protocolClearButton.down ? (themeManager.isDark ? "#303944" : "#E5E7EB") : (protocolClearButton.hovered ? (themeManager.isDark ? "#35404C" : "#F3F4F6") : surface)
+                            border.color: outlineStrong
                         }
                     }
                     Item { Layout.fillWidth: true }
@@ -658,13 +658,13 @@ Rectangle {
                         implicitWidth: protocolCheckStatus.implicitWidth + 14
                         implicitHeight: 22
                         radius: 5
-                        color: !root.protocolCheckHasInput ? "#20262B" : (root.protocolCheckOk ? "#123F36" : "#3A1F24")
-                        border.color: !root.protocolCheckHasInput ? "#35404C" : (root.protocolCheckOk ? "#2C927D" : "#A04452")
+                        color: !root.protocolCheckHasInput ? surfaceRaised : (root.protocolCheckOk ? (themeManager.isDark ? "#123F36" : "#ECFDF5") : (themeManager.isDark ? "#3A1F24" : "#FEE2E2"))
+                        border.color: !root.protocolCheckHasInput ? outlineStrong : (root.protocolCheckOk ? (themeManager.isDark ? "#2C927D" : "#059669") : (themeManager.isDark ? "#A04452" : "#DC2626"))
                         Text {
                             id: protocolCheckStatus
                             anchors.centerIn: parent
                             text: !root.protocolCheckHasInput ? "等待输入" : (root.protocolCheckOk ? "协议正确" : "协议错误")
-                            color: !root.protocolCheckHasInput ? "#9AA6B2" : (root.protocolCheckOk ? "#A8F0DE" : "#FFB8C2")
+                            color: !root.protocolCheckHasInput ? textMuted : (root.protocolCheckOk ? success : danger)
                             font.pixelSize: 11
                             font.weight: Font.Medium
                         }
@@ -696,12 +696,12 @@ Rectangle {
                     CheckCard { label: "CmdSet"; value: checkValue("cmdSet") }
                     CheckCard { label: "CmdID"; value: checkValue("cmdId") }
 
-                    CheckCard { label: "Flags"; value: checkValue("flags") }
+                    CheckCard { label: "CmdType"; value: checkValue("cmdType") }
                     CheckCard { label: "Payload"; value: checkValue("payloadLen") }
 
                     CheckCard {
-                        label: "CRC8"
-                        value: checkPairColoredValue("headerCrc", "headerCrcCalc")
+                        label: "BCC"
+                        value: checkPairColoredValue("headCrc", "headCrcCalc")
                         richValue: true
                     }
                     CheckCard {
@@ -865,7 +865,7 @@ Rectangle {
                                 rightPadding: 5
                                 font.pixelSize: 11
                                 font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
-                                text: settingsManager.loadValue("upgrade.src", "0x0101")
+                                text: settingsManager.loadValue("upgrade.src", "0x10")
                                 color: root.textPrimary
                                 enabled: !firmwareUpgrade.running
                                 background: Rectangle { color: root.surfaceSoft; border.color: compactSrcField.activeFocus ? root.accent : root.outlineStrong; radius: 6 }
@@ -882,7 +882,7 @@ Rectangle {
                                 rightPadding: 5
                                 font.pixelSize: 11
                                 font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
-                                text: settingsManager.loadValue("upgrade.dst", "0x0500")
+                                text: settingsManager.loadValue("upgrade.dst", "0x05")
                                 color: root.textPrimary
                                 enabled: !firmwareUpgrade.running
                                 background: Rectangle { color: root.surfaceSoft; border.color: compactDstField.activeFocus ? root.accent : root.outlineStrong; radius: 6 }
@@ -935,82 +935,134 @@ Rectangle {
                     Rectangle {
                         id: compactProgressPanel
                         Layout.fillWidth: true
-                        implicitHeight: 54
-                        radius: 8
-                        color: "#18212A"
-                        border.color: firmwareUpgrade.running ? "#376FA7" : root.outline
+                        implicitHeight: 60
+                        radius: 10
+                        color: themeManager.isDark ? "#18212A" : "#FFFFFF"
+                        border.color: firmwareUpgrade.running ? (themeManager.isDark ? "#376FA7" : "#3B82F6") : root.outline
                         property real percent: Math.max(0, Math.min(100, firmwareUpgrade.progress))
 
                         ColumnLayout {
                             anchors.fill: parent
-                            anchors.margins: 8
-                            spacing: 6
+                            anchors.margins: 10
+                            spacing: 8
 
                             RowLayout {
                                 Layout.fillWidth: true
+                                spacing: 8
                                 Text { text: "升级进度"; color: root.textPrimary; font.pixelSize: 11; font.weight: Font.DemiBold }
                                 Item { Layout.fillWidth: true }
+
+                                // 圆形进度指示器
                                 Rectangle {
-                                    implicitWidth: progressPercentText.implicitWidth + 14
-                                    implicitHeight: 19
-                                    radius: 9
-                                    color: firmwareUpgrade.running ? "#173653" : "#202832"
-                                    border.color: firmwareUpgrade.running ? "#3A8BC5" : root.outlineStrong
+                                    implicitWidth: 28
+                                    implicitHeight: 28
+                                    radius: 14
+                                    color: "transparent"
+                                    border.width: 3
+                                    border.color: themeManager.isDark ? "#253040" : "#E5E7EB"
+
+                                    Rectangle {
+                                        width: 28
+                                        height: 28
+                                        radius: 14
+                                        color: "transparent"
+                                        border.width: 3
+                                        border.color: firmwareUpgrade.running ? accent : (themeManager.isDark ? "#384858" : "#D1D5DB")
+                                    }
+
+                                    // 进度弧形效果（用遮罩实现）
+                                    Rectangle {
+                                        width: 28
+                                        height: 28
+                                        radius: 14
+                                        color: "transparent"
+                                        border.width: 3
+                                        border.color: firmwareUpgrade.running ? accent : "transparent"
+                                        visible: compactProgressPanel.percent > 0
+                                    }
 
                                     Text {
-                                        id: progressPercentText
                                         anchors.centerIn: parent
-                                        text: Math.round(compactProgressPanel.percent) + "%"
-                                        color: firmwareUpgrade.running ? "#9AE8FF" : root.textSecondary
-                                        font.pixelSize: 10
-                                        font.weight: Font.DemiBold
+                                        text: Math.round(compactProgressPanel.percent)
+                                        color: root.textPrimary
+                                        font.pixelSize: 8
+                                        font.weight: Font.Bold
+                                        font.family: "Consolas"
                                     }
                                 }
                             }
 
+                            // 现代进度条
                             Rectangle {
                                 Layout.fillWidth: true
-                                implicitHeight: 12
-                                radius: 6
-                                color: "#111922"
-                                border.color: root.outline
-                                clip: true
+                                implicitHeight: 8
+                                radius: 4
+                                color: themeManager.isDark ? "#1E2A38" : "#F1F5F9"
 
                                 Rectangle {
                                     id: progressFill
                                     width: parent.width * compactProgressPanel.percent / 100
                                     height: parent.height
-                                    radius: 6
-                                    gradient: Gradient {
-                                        GradientStop { position: 0.0; color: firmwareUpgrade.running ? "#38C8FF" : "#536B83" }
-                                        GradientStop { position: 1.0; color: firmwareUpgrade.running ? "#2F8DFF" : "#43576D" }
-                                    }
-                                    Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                                    radius: 4
+                                    visible: compactProgressPanel.percent > 0
 
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0.0; color: firmwareUpgrade.running ? "#38C8FF" : (themeManager.isDark ? "#536B83" : "#CBD5E1") }
+                                        GradientStop { position: 0.5; color: firmwareUpgrade.running ? accent : (themeManager.isDark ? "#43576D" : "#9CA3AF") }
+                                        GradientStop { position: 1.0; color: firmwareUpgrade.running ? "#2563EB" : (themeManager.isDark ? "#3B5068" : "#8CA0B4") }
+                                    }
+                                    Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
+                                    // 发光效果
                                     Rectangle {
                                         anchors.left: parent.left
                                         anchors.right: parent.right
                                         anchors.top: parent.top
-                                        height: 4
-                                        radius: 4
+                                        height: 3
+                                        radius: 2
                                         color: "#FFFFFF"
-                                        opacity: firmwareUpgrade.running ? 0.16 : 0.07
+                                        opacity: firmwareUpgrade.running ? 0.3 : 0.1
+                                    }
+
+                                    // 闪光动画
+                                    Rectangle {
+                                        width: 24
+                                        height: parent.height
+                                        radius: 4
+                                        opacity: firmwareUpgrade.running ? 0.4 : 0
+                                        gradient: Gradient {
+                                            orientation: Gradient.Horizontal
+                                            GradientStop { position: 0.0; color: "transparent" }
+                                            GradientStop { position: 0.5; color: "#FFFFFF" }
+                                            GradientStop { position: 1.0; color: "transparent" }
+                                        }
+                                        x: Math.max(0, progressFill.width - width - 2)
+                                        SequentialAnimation on x {
+                                            loops: Animation.Infinite
+                                            running: firmwareUpgrade.running
+                                            NumberAnimation { from: -24; to: progressFill.width + 24; duration: 1500; easing.type: Easing.InOutQuad }
+                                        }
                                     }
                                 }
+                            }
 
-                                Rectangle {
-                                    width: 18
-                                    height: parent.height
-                                    radius: 6
-                                    opacity: firmwareUpgrade.running ? 0.26 : 0
-                                    gradient: Gradient {
-                                        orientation: Gradient.Horizontal
-                                        GradientStop { position: 0.0; color: "transparent" }
-                                        GradientStop { position: 0.5; color: "#FFFFFF" }
-                                        GradientStop { position: 1.0; color: "transparent" }
-                                    }
-                                    x: Math.max(0, progressFill.width - width)
-                                    Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                            // 状态文字
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Text {
+                                    text: firmwareUpgrade.running ? "正在升级..." : (compactProgressPanel.percent >= 100 ? "升级完成" : "准备就绪")
+                                    color: firmwareUpgrade.running ? accent : (compactProgressPanel.percent >= 100 ? success : textMuted)
+                                    font.pixelSize: 10
+                                    font.weight: Font.Medium
+                                }
+                                Item { Layout.fillWidth: true }
+                                Text {
+                                    text: Math.round(compactProgressPanel.percent) + "%"
+                                    color: root.textPrimary
+                                    font.pixelSize: 11
+                                    font.weight: Font.Bold
+                                    font.family: "Consolas"
                                 }
                             }
                         }
@@ -1063,8 +1115,8 @@ Rectangle {
                                 }
                                 background: Rectangle {
                                     radius: 6
-                                    color: !compactQueryVersionButton.enabled ? "#252C34" : (compactQueryVersionButton.down ? "#1D5E99" : (compactQueryVersionButton.hovered ? "#2878C6" : "#236EA9"))
-                                    border.color: !compactQueryVersionButton.enabled ? "#343D47" : "#55A9F8"
+                                    color: !compactQueryVersionButton.enabled ? (themeManager.isDark ? "#252C34" : "#E5E7EB") : (compactQueryVersionButton.down ? (themeManager.isDark ? "#1D5E99" : "#1D4ED8") : (compactQueryVersionButton.hovered ? (themeManager.isDark ? "#2878C6" : "#3B82F6") : accent))
+                                    border.color: !compactQueryVersionButton.enabled ? (themeManager.isDark ? "#343D47" : "#D1D5DB") : (themeManager.isDark ? "#55A9F8" : "#93C5FD")
                                 }
                             }
                             Button {
@@ -1086,8 +1138,8 @@ Rectangle {
                                 }
                                 background: Rectangle {
                                     radius: 6
-                                    color: !compactStartUpgradeButton.enabled ? "#252C34" : (compactStartUpgradeButton.down ? "#16856F" : (compactStartUpgradeButton.hovered ? "#23A78C" : "#1E967E"))
-                                    border.color: !compactStartUpgradeButton.enabled ? "#343D47" : "#48D1B5"
+                                    color: !compactStartUpgradeButton.enabled ? (themeManager.isDark ? "#252C34" : "#E5E7EB") : (compactStartUpgradeButton.down ? (themeManager.isDark ? "#16856F" : "#047857") : (compactStartUpgradeButton.hovered ? (themeManager.isDark ? "#23A78C" : "#10B981") : (themeManager.isDark ? "#1E967E" : "#059669")))
+                                    border.color: !compactStartUpgradeButton.enabled ? (themeManager.isDark ? "#343D47" : "#D1D5DB") : (themeManager.isDark ? "#48D1B5" : "#34D399")
                                 }
                             }
                             Button {
@@ -1114,8 +1166,8 @@ Rectangle {
                                 }
                                 background: Rectangle {
                                     radius: 6
-                                    color: !compactStressUpgradeButton.enabled ? "#252C34" : (compactStressUpgradeButton.down ? "#7A5B10" : (compactStressUpgradeButton.hovered ? "#A77E19" : "#8C6815"))
-                                    border.color: !compactStressUpgradeButton.enabled ? "#343D47" : "#D4A83B"
+                                    color: !compactStressUpgradeButton.enabled ? (themeManager.isDark ? "#252C34" : "#E5E7EB") : (compactStressUpgradeButton.down ? (themeManager.isDark ? "#7A5B10" : "#B45309") : (compactStressUpgradeButton.hovered ? (themeManager.isDark ? "#A77E19" : "#D97706") : (themeManager.isDark ? "#8C6815" : "#F59E0B")))
+                                    border.color: !compactStressUpgradeButton.enabled ? (themeManager.isDark ? "#343D47" : "#D1D5DB") : (themeManager.isDark ? "#D4A83B" : "#D97706")
                                 }
                             }
                             Button {
@@ -1137,8 +1189,8 @@ Rectangle {
                                 }
                                 background: Rectangle {
                                     radius: 6
-                                    color: !compactCancelUpgradeButton.enabled ? "#252C34" : (compactCancelUpgradeButton.down ? "#8B3232" : (compactCancelUpgradeButton.hovered ? "#B84646" : "#9D3A3A"))
-                                    border.color: !compactCancelUpgradeButton.enabled ? "#343D47" : "#E06B6B"
+                                    color: !compactCancelUpgradeButton.enabled ? (themeManager.isDark ? "#252C34" : "#E5E7EB") : (compactCancelUpgradeButton.down ? (themeManager.isDark ? "#8B3232" : "#B91C1C") : (compactCancelUpgradeButton.hovered ? (themeManager.isDark ? "#B84646" : "#EF4444") : (themeManager.isDark ? "#9D3A3A" : "#DC2626")))
+                                    border.color: !compactCancelUpgradeButton.enabled ? (themeManager.isDark ? "#343D47" : "#D1D5DB") : (themeManager.isDark ? "#E06B6B" : "#F87171")
                                 }
                             }
                         }
@@ -1186,8 +1238,8 @@ Rectangle {
                             columnSpacing: 6
                             rowSpacing: 5
 
-                            VersionPill { label: "APP"; value: firmwareUpgrade.deviceAppVersion.length > 0 ? firmwareUpgrade.deviceAppVersion : "-"; accentColor: "#7AB7FF" }
-                            VersionPill { label: "BL"; value: firmwareUpgrade.deviceBootloaderVersion.length > 0 ? firmwareUpgrade.deviceBootloaderVersion : "-"; accentColor: "#B6C8E8" }
+                            VersionPill { label: "APP"; value: firmwareUpgrade.deviceAppVersion.length > 0 ? firmwareUpgrade.deviceAppVersion : "-"; accentColor: themeManager.isDark ? "#7AB7FF" : "#3B82F6" }
+                            VersionPill { label: "BL"; value: firmwareUpgrade.deviceBootloaderVersion.length > 0 ? firmwareUpgrade.deviceBootloaderVersion : "-"; accentColor: themeManager.isDark ? "#B6C8E8" : "#6B7280" }
                             InfoField {
                                 label: "模块"
                                 value: firmwareUpgrade.deviceModule.length > 0 ? firmwareUpgrade.deviceModule : "-"
@@ -1246,8 +1298,8 @@ Rectangle {
         var cmdset = parseHexField(cmdsetField.text)
         var cmdid = parseHexField(cmdidField.text)
         return {
-            src: hexText(src, 4),
-            dst: hexText(dst, 4),
+            src: hexText(src, 2),
+            dst: hexText(dst, 2),
             seq: seq.toString().padStart(4, "0"),
             cmdset: hexText(cmdset, 2),
             cmdid: hexText(cmdid, 2),
@@ -1353,9 +1405,8 @@ Rectangle {
             len: frame.len || "",
             payloadLen: frame.payloadLen || "",
             data: displayHexText(frame.data || ""),
-            attr: displayHexText(frame.attr || frame.flags || ""),
-            flags: displayHexText(frame.flags || ""),
-            nextHeader: displayHexText(frame.nextHeader || ""),
+            cmdType: displayHexText(frame.cmdType || ""),
+            headCrc: displayHexText(frame.headCrc || ""),
             crc: displayHexText(frame.crc || ""),
             crcValid: frame.crcValid,
             rawHex: displayHexText(frame.rawHex || "")
@@ -1472,7 +1523,7 @@ Rectangle {
         var frame = protocolEngine.buildFrame(src, dst, attr, seq, cmdset, cmdid, dataBytes)
         hexPreview.text = protocolEngine.bytesToHex(frame)
 
-        crc8Display.text = "0x" + ("0" + protocolEngine.getByte(frame, 9).toString(16).toUpperCase()).slice(-2)
+        bccDisplay.text = "0x" + ("0" + protocolEngine.getByte(frame, 3).toString(16).toUpperCase()).slice(-2)
         var crc16Lo = protocolEngine.getByte(frame, protocolEngine.frameLength(frame) - 2)
         var crc16Hi = protocolEngine.getByte(frame, protocolEngine.frameLength(frame) - 1)
         crc16Display.text = "0x" + ("000" + ((crc16Hi << 8) | crc16Lo).toString(16).toUpperCase()).slice(-4)
@@ -1495,8 +1546,8 @@ Rectangle {
 
         var frame = protocolEngine.buildFrame(src, dst, attr, seq, cmdset, cmdid, dataBytes)
 
-        var srcHex = "0x" + src.toString(16).toUpperCase().padStart(4, '0')
-        var dstHex = "0x" + dst.toString(16).toUpperCase().padStart(4, '0')
+        var srcHex = "0x" + src.toString(16).toUpperCase().padStart(2, '0')
+        var dstHex = "0x" + dst.toString(16).toUpperCase().padStart(2, '0')
         var cmdSetHex = "0x" + cmdset.toString(16).toUpperCase().padStart(2, '0')
         var cmdIdHex = "0x" + cmdid.toString(16).toUpperCase().padStart(2, '0')
         var seqStr = seq.toString().padStart(4, '0')
@@ -1514,7 +1565,7 @@ Rectangle {
 
         linkManager.sendData(frame)
 
-        crc8Display.text = "0x" + ("0" + protocolEngine.getByte(frame, 9).toString(16).toUpperCase()).slice(-2)
+        bccDisplay.text = "0x" + ("0" + protocolEngine.getByte(frame, 3).toString(16).toUpperCase()).slice(-2)
         var crc16Lo = protocolEngine.getByte(frame, protocolEngine.frameLength(frame) - 2)
         var crc16Hi = protocolEngine.getByte(frame, protocolEngine.frameLength(frame) - 1)
         crc16Display.text = "0x" + ("000" + ((crc16Hi << 8) | crc16Lo).toString(16).toUpperCase()).slice(-4)
@@ -1549,7 +1600,7 @@ Rectangle {
         Layout.preferredWidth: Math.max(78, tabText.implicitWidth + 28)
         Layout.fillHeight: true
         radius: 7
-        color: selected ? "#1E2B39" : (tabMouse.containsMouse ? "#18212A" : "transparent")
+        color: selected ? (themeManager.isDark ? "#1E2B39" : "#DBEAFE") : (tabMouse.containsMouse ? (themeManager.isDark ? "#18212A" : "#F3F4F6") : "transparent")
         border.color: selected ? accentColor : (tabMouse.containsMouse ? root.outline : "transparent")
         border.width: 1
 
@@ -1588,8 +1639,8 @@ Rectangle {
         Layout.preferredWidth: 1
         Layout.minimumWidth: 0
         implicitHeight: Math.max(26, checkCardValue.implicitHeight + 10)
-        color: "#171D24"
-        border.color: "#2B3540"
+        color: themeManager.isDark ? "#171D24" : "#F9FAFB"
+        border.color: root.outline
         border.width: 1
         radius: 5
         property string label: ""
@@ -1607,7 +1658,7 @@ Rectangle {
                 text: label
                 Layout.preferredWidth: 48
                 Layout.alignment: Qt.AlignVCenter
-                color: "#8E99A6"
+                color: root.textMuted
                 font.pixelSize: 10
                 horizontalAlignment: Text.AlignLeft
                 verticalAlignment: Text.AlignVCenter
@@ -1617,7 +1668,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
                 text: value
-                color: "#E2E8EF"
+                color: root.textPrimary
                 font.pixelSize: 11
                 font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
                 textFormat: richValue ? Text.RichText : Text.PlainText
@@ -1723,8 +1774,8 @@ Rectangle {
         Layout.minimumWidth: 0
         implicitHeight: 28
         radius: 7
-        color: "#172435"
-        border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.55)
+        color: themeManager.isDark ? "#172435" : "#F9FAFB"
+        border.color: themeManager.isDark ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.55) : outline
 
         RowLayout {
             anchors.fill: parent
@@ -1734,7 +1785,7 @@ Rectangle {
 
             Text {
                 text: versionPill.label
-                color: "#9EA9B6"
+                color: themeManager.isDark ? "#9EA9B6" : "#6B7280"
                 font.pixelSize: 9
                 font.weight: Font.Medium
                 Layout.alignment: Qt.AlignVCenter
@@ -1770,8 +1821,8 @@ Rectangle {
         Layout.minimumWidth: 0
         implicitHeight: 24
         radius: 6
-        color: emphasize ? "#172235" : "#151C24"
-        border.color: emphasize ? "#365D82" : "#26323E"
+        color: emphasize ? (themeManager.isDark ? "#172235" : "#EFF6FF") : (themeManager.isDark ? "#151C24" : "#F9FAFB")
+        border.color: emphasize ? (themeManager.isDark ? "#365D82" : "#93C5FD") : (themeManager.isDark ? "#26323E" : "#D1D5DB")
 
         RowLayout {
             anchors.fill: parent
@@ -1781,7 +1832,7 @@ Rectangle {
 
             Text {
                 text: infoField.label
-                color: emphasize ? "#BFD0E2" : "#8E99A6"
+                color: emphasize ? (themeManager.isDark ? "#BFD0E2" : "#1D4ED8") : (themeManager.isDark ? "#8E99A6" : "#6B7280")
                 font.pixelSize: 9
                 font.weight: emphasize ? Font.Medium : Font.Normal
                 Layout.preferredWidth: infoField.labelWidth
@@ -1793,7 +1844,7 @@ Rectangle {
             Text {
                 Layout.fillWidth: true
                 text: infoField.value
-                color: emphasize ? "#F4F8FC" : "#E2E8EF"
+                color: emphasize ? (themeManager.isDark ? "#F4F8FC" : "#111827") : (themeManager.isDark ? "#E2E8EF" : "#374151")
                 font.pixelSize: 10
                 fontSizeMode: infoField.valueFontSizeMode
                 minimumPixelSize: 8
@@ -1812,23 +1863,23 @@ Rectangle {
         property int count: 0
         readonly property string digits: formatUpgradeSuccessCount(count)
         implicitWidth: 86
-        implicitHeight: 54
-        radius: 8
-        color: "#182229"
-        border.color: count > 0 ? "#2B7A68" : "#30404A"
+        implicitHeight: 60
+        radius: 10
+        color: themeManager.isDark ? "#182229" : "#FFFFFF"
+        border.color: count > 0 ? (themeManager.isDark ? "#2B7A68" : "#059669") : (themeManager.isDark ? "#30404A" : "#D1D5DB")
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.leftMargin: 6
-            anchors.rightMargin: 6
-            anchors.topMargin: 5
-            anchors.bottomMargin: 5
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            anchors.topMargin: 6
+            anchors.bottomMargin: 6
             spacing: 4
 
             Text {
                 Layout.fillWidth: true
                 text: "成功次数"
-                color: count > 0 ? "#8CE8D1" : "#9BAAB3"
+                color: count > 0 ? (themeManager.isDark ? "#8CE8D1" : "#059669") : (themeManager.isDark ? "#9BAAB3" : "#6B7280")
                 font.pixelSize: 9
                 font.weight: Font.Medium
                 horizontalAlignment: Text.AlignHCenter
@@ -1837,31 +1888,40 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                radius: 7
-                color: "#111A20"
-                border.color: count > 0 ? "#2F8B76" : "#27333C"
+                radius: 8
+                color: themeManager.isDark ? "#0F1A24" : "#F8FAFC"
+                border.color: count > 0 ? (themeManager.isDark ? "#1E3A30" : "#D1FAE5") : (themeManager.isDark ? "#1E2A38" : "#E2E8F0")
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 7
-                    anchors.rightMargin: 6
-                    spacing: 3
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    spacing: 2
 
-                    Text {
-                        id: successDigits
-                        Layout.fillWidth: true
-                        text: digitalSuccessCounter.digits
-                        color: count > 0 ? "#6AF1D1" : "#5EE0C2"
-                        font.pixelSize: 20
-                        font.weight: Font.DemiBold
-                        font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                    // 数字翻牌效果
+                    Repeater {
+                        model: digitalSuccessCounter.digits.split("")
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: 4
+                            color: themeManager.isDark ? "#162030" : "#F1F5F9"
+                            border.color: count > 0 ? (themeManager.isDark ? "#2B7A68" : "#059669") : (themeManager.isDark ? "#253040" : "#E2E8F0")
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData
+                                color: count > 0 ? (themeManager.isDark ? "#34D399" : "#059669") : (themeManager.isDark ? "#607080" : "#94A3B8")
+                                font.pixelSize: 18
+                                font.weight: Font.Bold
+                                font.family: "Consolas"
+                            }
+                        }
                     }
 
                     Text {
                         text: "次"
-                        color: "#8E99A6"
+                        color: themeManager.isDark ? "#8E99A6" : "#6B7280"
                         font.pixelSize: 9
                         font.weight: Font.Medium
                         Layout.alignment: Qt.AlignVCenter

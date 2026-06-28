@@ -25,7 +25,7 @@ must not use a resource file with the same name.
 
 ## Build
 It's a CMake-based library, so it can be used as a static library.
-This repository keeps only the library files required by KPtools.
+This repository keeps only the library files required by ProtoTools.
 
 1. Clone the repository: `git clone https://github.com/Megaxela/QCodeEditor`
 1. Go into the repository: `cd QCodeEditor`

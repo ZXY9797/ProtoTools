@@ -6,7 +6,13 @@ import "../Widgets" as W
 
 Rectangle {
     id: root
-    color: "#151719"
+    color: themeManager.isDark ? "#0C1017" : "#F8F9FB"
+
+    // 主题颜色别名
+    readonly property color pageBg: themeManager.isDark ? "#0C1017" : "#F8F9FB"
+    readonly property color surface: themeManager.isDark ? "#131920" : "#FFFFFF"
+    readonly property color outline: themeManager.isDark ? "#1E2A38" : "#E5E7EB"
+    readonly property color accent: themeManager.isDark ? "#3B8AFF" : "#2563EB"
 
     // 左侧为主工作区，右侧保持工具栏宽度，避免全屏时两侧同比放大。
     property real savedLeftColWidth: 960
@@ -95,7 +101,7 @@ Rectangle {
 
                 handle: Rectangle {
                     implicitHeight: 4
-                    color: SplitHandle.pressed ? "#3D8BFF" : (SplitHandle.hovered ? "#3D8BFF" : "#2A3037")
+                    color: SplitHandle.pressed ? accent : (SplitHandle.hovered ? accent : outline)
                 }
 
                 P.Dashboard {
@@ -141,7 +147,7 @@ Rectangle {
                 width: 4
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                color: handleMouse.pressed ? "#3D8BFF" : (handleMouse.containsMouse ? "#3D8BFF" : "#2A3037")
+                color: handleMouse.pressed ? accent : (handleMouse.containsMouse ? accent : outline)
 
                 MouseArea {
                     id: handleMouse
@@ -172,7 +178,7 @@ Rectangle {
 
                 handle: Rectangle {
                     implicitHeight: 4
-                    color: SplitHandle.pressed ? "#3D8BFF" : (SplitHandle.hovered ? "#3D8BFF" : "#2A3037")
+                    color: SplitHandle.pressed ? accent : (SplitHandle.hovered ? accent : outline)
                 }
 
                 P.Setup {

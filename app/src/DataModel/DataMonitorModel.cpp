@@ -349,7 +349,7 @@ QVariant DataMonitorModel::data(const QModelIndex &index, int role) const
     case CmdSetRole:    return frame.value("cmdSet", "");
     case DataRole:      return frame.value("data", "");
     case CrcRole:       return frame.value("crc", "");
-    case Crc8Role:      return frame.value("crc8", "");
+    case Crc8Role:      return frame.value("headCrc", "");
     case RawHexRole:    return frame.value("rawHex", "");
     case RowColorRole:  return frame.value("rowColor", frame.value("color", frame.value("bgColor", "")));
     case TextColorRole: return frame.value("textColor", "");
@@ -421,7 +421,7 @@ bool DataMonitorModel::exportRawHex(const QString &linkType, const QString &link
         linkType.trimmed().isEmpty() ? QStringLiteral("LINK") : linkType.trimmed(),
         linkInfo.trimmed()
     }.join(QLatin1Char('_')), QStringLiteral("LINK"));
-    const QString defaultName = QStringLiteral("KPtools_%1_%2_%3-%4.txt")
+    const QString defaultName = QStringLiteral("ProtoTools_%1_%2_%3-%4.txt")
         .arg(linkPart, datePart, startTime, endTime);
 
     QString startDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
@@ -479,7 +479,7 @@ QHash<int, QByteArray> DataMonitorModel::roleNames() const
     names[CmdSetRole]    = "cmdSet";
     names[DataRole]      = "data";
     names[CrcRole]       = "crc";
-    names[Crc8Role]      = "crc8";
+    names[Crc8Role]      = "headCrc";
     names[RawHexRole]    = "rawHex";
     names[RowColorRole]  = "rowColor";
     names[TextColorRole] = "textColor";

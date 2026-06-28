@@ -1,8 +1,8 @@
 <#
-KPtools Windows single-file packaging script
+ProtoTools Windows single-file packaging script
 
 What this script does:
-1. Configure and build KPtools Release with MSVC + Qt.
+1. Configure and build ProtoTools Release with MSVC + Qt.
 2. Package the ZLG CAN bridge Python script into zlg_can_bridge.exe, so CAN does
    not depend on a user-installed Python runtime.
 3. Create a temporary portable application directory with windeployqt.
@@ -11,9 +11,9 @@ What this script does:
    - MSVC 2022 runtime: copied from Visual Studio redist directory
    - MSVC 2013 runtime: required by ZLG zlgcan.dll
    - ZLG CAN DLL and sibling x64 kerneldlls: required for CAN/CAN FD link
-5. Wrap the portable directory into one self-extracting KPtools.exe with
+5. Wrap the portable directory into one self-extracting ProtoTools.exe with
    PyInstaller.
-6. Delete temporary build/deploy directories and leave only dist/KPtools.exe.
+6. Delete temporary build/deploy directories and leave only dist/ProtoTools.exe.
 
 Required tools:
 - Windows x64
@@ -220,8 +220,18 @@ function Copy-ZlgRuntime([string]$ZlgDllPath, [string]$TargetDir) {
 }
 
 function Copy-Msvc2022Runtime([string]$TargetDir) {
-    $redistRoot = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC"
-    Require-Directory $redistRoot "MSVC 2022 redist directory was not found."
+    $redistRootCandidates = @(
+        "D:\software\vs2022\VC\Redist\MSVC",
+        "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC",
+        "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC",
+        "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC",
+        "C:\Program Files (x86)\Microsoft Visual Studio\2022\Professional\VC\Redist\MSVC",
+        "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC"
+    )
+    $redistRoot = $redistRootCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Container } | Select-Object -First 1
+    if (-not $redistRoot) {
+        throw "MSVC 2022 redist directory was not found under any known location."
+    }
 
     $crtDir = Get-ChildItem -LiteralPath $redistRoot -Directory |
         Sort-Object Name -Descending |
@@ -301,7 +311,7 @@ function Ensure-PyInstallerVenv {
 }
 
 function Invoke-LaunchTest([string]$ExePath) {
-    $processes = Get-Process KPtools, zlg_can_bridge -ErrorAction SilentlyContinue
+    $processes = Get-Process ProtoTools, zlg_can_bridge -ErrorAction SilentlyContinue
     if ($processes) {
         $processes | Stop-Process -Force
     }
@@ -315,37 +325,37 @@ function Invoke-LaunchTest([string]$ExePath) {
     Start-Sleep -Seconds 15
     $process.Refresh()
     if ($process.HasExited) {
-        throw "Launch test failed; KPtools exited with code $($process.ExitCode)."
+        throw "Launch test failed; ProtoTools exited with code $($process.ExitCode)."
     }
 
-    Get-Process KPtools -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Process ProtoTools -ErrorAction SilentlyContinue | Stop-Process -Force
 }
 
-function Stop-KPtoolsProcesses {
-    $processes = Get-Process KPtools, zlg_can_bridge -ErrorAction SilentlyContinue
+function Stop-ProtoToolsProcesses {
+    $processes = Get-Process ProtoTools, zlg_can_bridge -ErrorAction SilentlyContinue
     if ($processes) {
         $processes | Stop-Process -Force
         Start-Sleep -Milliseconds 500
     }
 }
 
-Write-Host "== KPtools single-file package =="
+Write-Host "== ProtoTools single-file package =="
 Write-Host "Repo:  $RepoRoot"
 Write-Host "Qt:    $QtRoot"
 Write-Host "Build: $BuildDir"
 Write-Host "Dist:  $DistDir"
 
-Stop-KPtoolsProcesses
+Stop-ProtoToolsProcesses
 
 Require-Directory $QtRoot "Qt MSVC x64 root was not found."
 Require-File (Join-Path $QtRoot "bin\windeployqt.exe") "windeployqt was not found under Qt root."
 Require-File (Join-Path $RepoRoot "app\tools\zlg_can_bridge.py") "ZLG CAN bridge script was not found."
-Require-File (Join-Path $RepoRoot "app\rcc\icons\ProtoDebug.ico") "Windows icon was not found."
+Require-File (Join-Path $RepoRoot "app\rcc\icons\ProtoTools.ico") "Windows icon was not found."
 
 $BuildDir = Assert-InRepo $BuildDir
 $DistDir = Assert-InRepo $DistDir
-$PortableDir = Join-Path $DistDir "KPtools-portable"
-$FinalExe = Join-Path $DistDir "KPtools.exe"
+$PortableDir = Join-Path $DistDir "ProtoTools-portable"
+$FinalExe = Join-Path $DistDir "ProtoTools.exe"
 
 New-CleanDirectory $BuildDir
 New-CleanDirectory $DistDir
@@ -354,11 +364,11 @@ New-Item -ItemType Directory -Path $PortableDir | Out-Null
 Write-Host "Step 1/7: Configure CMake"
 Invoke-VsDevCommand "cmake -S `"$RepoRoot`" -B `"$BuildDir`" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=`"$QtRoot`""
 
-Write-Host "Step 2/7: Build KPtools Release"
-Invoke-VsDevCommand "cmake --build `"$BuildDir`" --config Release --target KPtools" (Join-Path $BuildDir "build.log")
+Write-Host "Step 2/7: Build ProtoTools Release"
+Invoke-VsDevCommand "cmake --build `"$BuildDir`" --config Release --target ProtoTools" (Join-Path $BuildDir "build.log")
 
-$BuiltExe = Join-Path $BuildDir "app\KPtools.exe"
-Require-File $BuiltExe "KPtools.exe was not built."
+$BuiltExe = Join-Path $BuildDir "app\ProtoTools.exe"
+Require-File $BuiltExe "ProtoTools.exe was not built."
 
 Write-Host "Step 3/7: Build zlg_can_bridge.exe"
 $venvPython = Ensure-PyInstallerVenv
@@ -385,21 +395,21 @@ if (-not $SkipZlgCan) {
 
 Write-Host "Step 5/7: Deploy Qt and runtime DLLs"
 $windeployqt = Join-Path $QtRoot "bin\windeployqt.exe"
-Invoke-VsDevCommand "`"$windeployqt`" --release --qmldir `"$RepoRoot\app\qml`" --compiler-runtime --no-translations `"$PortableDir\KPtools.exe`"" (Join-Path $BuildDir "windeployqt.log")
+Invoke-VsDevCommand "`"$windeployqt`" --release --qmldir `"$RepoRoot\app\qml`" --compiler-runtime --no-translations `"$PortableDir\ProtoTools.exe`"" (Join-Path $BuildDir "windeployqt.log")
 Copy-Msvc2022Runtime $PortableDir
 if (-not $SkipZlgCan) {
     Copy-Vc2013Runtime $PortableDir
 }
 
 # windeployqt may copy installer payloads/logs that are not needed at runtime.
-@("vc_redist.x64.exe", "windeployqt.log", "KPtools-icon-preview.png", "zlg_can_bridge.py") | ForEach-Object {
+@("vc_redist.x64.exe", "windeployqt.log", "ProtoTools-icon-preview.png", "zlg_can_bridge.py") | ForEach-Object {
     $path = Join-Path $PortableDir $_
     if (Test-Path -LiteralPath $path) {
         Remove-Item -LiteralPath $path -Force
     }
 }
 
-Write-Host "Step 6/7: Wrap portable payload into one KPtools.exe"
+Write-Host "Step 6/7: Wrap portable payload into one ProtoTools.exe"
 $launcher = Join-Path $BuildDir "single_file_launcher.py"
 $launcherCode = @'
 import os
@@ -407,25 +417,25 @@ import subprocess
 import sys
 
 base_dir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-app_dir = os.path.join(base_dir, "KPtools-portable")
-app_exe = os.path.join(app_dir, "KPtools.exe")
+app_dir = os.path.join(base_dir, "ProtoTools-portable")
+app_exe = os.path.join(app_dir, "ProtoTools.exe")
 os.chdir(app_dir)
 sys.exit(subprocess.call([app_exe] + sys.argv[1:]))
 '@
 [System.IO.File]::WriteAllText($launcher, $launcherCode, [System.Text.UTF8Encoding]::new($false))
 
-$addData = "$PortableDir;KPtools-portable"
-& $venvPython -m PyInstaller --onefile --windowed --clean --name KPtools `
-    --icon (Join-Path $RepoRoot "app\rcc\icons\ProtoDebug.ico") `
+$addData = "$PortableDir;ProtoTools-portable"
+& $venvPython -m PyInstaller --onefile --windowed --clean --name ProtoTools `
+    --icon (Join-Path $RepoRoot "app\rcc\icons\ProtoTools.ico") `
     --distpath $DistDir `
     --workpath (Join-Path $BuildDir "single-file-build") `
     --specpath (Join-Path $BuildDir "single-file-spec") `
     "--add-data=$addData" `
     $launcher
 if ($LASTEXITCODE -ne 0) {
-    throw "PyInstaller failed to build single-file KPtools.exe."
+    throw "PyInstaller failed to build single-file ProtoTools.exe."
 }
-Require-File $FinalExe "Final single-file KPtools.exe was not created."
+Require-File $FinalExe "Final single-file ProtoTools.exe was not created."
 
 if ($RunLaunchTest) {
     Write-Host "Step 7/7: Launch test"

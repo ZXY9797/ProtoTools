@@ -95,7 +95,7 @@ Item {
         rowSpacing: 3
         columnSpacing: 7
 
-        Label { text: "索引/通道"; color: "#AEB7C2"; font.pixelSize: 11 }
+        Label { text: "索引/通道"; color: themeManager.isDark ? "#AEB7C2" : "#6B7280"; font.pixelSize: 11 }
         RowLayout {
             Layout.fillWidth: true
             spacing: 5
@@ -106,9 +106,9 @@ Item {
                 Layout.preferredWidth: 1
                 implicitHeight: root.controlHeight
                 font.pixelSize: 10
-                color: "#D4D4D4"
+                color: themeManager.isDark ? "#D4D4D4" : "#111827"
                 validator: IntValidator { bottom: 0; top: 32 }
-                background: Rectangle { color: "#22272E"; border.color: deviceIndexField.activeFocus ? "#7AB7FF" : "#3A424C"; radius: 6 }
+                background: Rectangle { color: themeManager.isDark ? "#22272E" : "#F9FAFB"; border.color: deviceIndexField.activeFocus ? (themeManager.isDark ? "#7AB7FF" : "#2563EB") : (themeManager.isDark ? "#3A424C" : "#D1D5DB"); radius: 6 }
                 onTextEdited: {
                     if (root._restoring || !canDriver) return
                     var v = root.parseNumber(text, 0)
@@ -123,9 +123,9 @@ Item {
                 Layout.preferredWidth: 1
                 implicitHeight: root.controlHeight
                 font.pixelSize: 10
-                color: "#D4D4D4"
+                color: themeManager.isDark ? "#D4D4D4" : "#111827"
                 validator: IntValidator { bottom: 0; top: 16 }
-                background: Rectangle { color: "#22272E"; border.color: channelField.activeFocus ? "#7AB7FF" : "#3A424C"; radius: 6 }
+                background: Rectangle { color: themeManager.isDark ? "#22272E" : "#F9FAFB"; border.color: channelField.activeFocus ? (themeManager.isDark ? "#7AB7FF" : "#2563EB") : (themeManager.isDark ? "#3A424C" : "#D1D5DB"); radius: 6 }
                 onTextEdited: {
                     if (root._restoring || !canDriver) return
                     var v = root.parseNumber(text, 0)
@@ -135,7 +135,7 @@ Item {
             }
         }
 
-        Label { text: "TX/RX ID"; color: "#AEB7C2"; font.pixelSize: 11 }
+        Label { text: "TX/RX ID"; color: themeManager.isDark ? "#AEB7C2" : "#6B7280"; font.pixelSize: 11 }
         RowLayout {
             Layout.fillWidth: true
             spacing: 5
@@ -147,8 +147,8 @@ Item {
                 implicitHeight: root.controlHeight
                 font.pixelSize: 10
                 font.family: "Menlo"
-                color: "#D4D4D4"
-                background: Rectangle { color: "#22272E"; border.color: txIdField.activeFocus ? "#7AB7FF" : "#3A424C"; radius: 6 }
+                color: themeManager.isDark ? "#D4D4D4" : "#111827"
+                background: Rectangle { color: themeManager.isDark ? "#22272E" : "#F9FAFB"; border.color: txIdField.activeFocus ? (themeManager.isDark ? "#7AB7FF" : "#2563EB") : (themeManager.isDark ? "#3A424C" : "#D1D5DB"); radius: 6 }
                 onTextEdited: {
                     if (root._restoring || !canDriver) return
                     canDriver.txId = root.parseNumber(text, 0x100)
@@ -163,8 +163,8 @@ Item {
                 implicitHeight: root.controlHeight
                 font.pixelSize: 10
                 font.family: "Menlo"
-                color: "#D4D4D4"
-                background: Rectangle { color: "#22272E"; border.color: rxIdField.activeFocus ? "#7AB7FF" : "#3A424C"; radius: 6 }
+                color: themeManager.isDark ? "#D4D4D4" : "#111827"
+                background: Rectangle { color: themeManager.isDark ? "#22272E" : "#F9FAFB"; border.color: rxIdField.activeFocus ? (themeManager.isDark ? "#7AB7FF" : "#2563EB") : (themeManager.isDark ? "#3A424C" : "#D1D5DB"); radius: 6 }
                 onTextEdited: {
                     if (root._restoring || !canDriver) return
                     canDriver.rxId = root.parseNumber(text, 0x200)
@@ -173,7 +173,7 @@ Item {
             }
         }
 
-        Label { text: "帧类型"; color: "#AEB7C2"; font.pixelSize: 11 }
+        Label { text: "帧类型"; color: themeManager.isDark ? "#AEB7C2" : "#6B7280"; font.pixelSize: 11 }
         RowLayout {
             Layout.fillWidth: true
             spacing: 6
@@ -186,10 +186,10 @@ Item {
                 font.pixelSize: 10
                 model: ["CAN", "CAN FD"]
                 enabled: !linkManager.connected && !linkManager.connecting
-                background: Rectangle { color: "#22272E"; border.color: formatCombo.activeFocus ? "#7AB7FF" : "#3A424C"; radius: 6 }
+                background: Rectangle { color: themeManager.isDark ? "#22272E" : "#F9FAFB"; border.color: formatCombo.activeFocus ? (themeManager.isDark ? "#7AB7FF" : "#2563EB") : (themeManager.isDark ? "#3A424C" : "#D1D5DB"); radius: 6 }
                 contentItem: Text {
                     text: formatCombo.currentText
-                    color: "#D4D4D4"
+                    color: themeManager.isDark ? "#D4D4D4" : "#111827"
                     font: formatCombo.font
                     leftPadding: 6
                     rightPadding: 6
@@ -237,10 +237,10 @@ Item {
             }
         }
 
-        Label { text: "速率"; color: "#AEB7C2"; font.pixelSize: 11 }
+        Label { text: "速率"; color: themeManager.isDark ? "#AEB7C2" : "#6B7280"; font.pixelSize: 11 }
         RowLayout {
             Layout.fillWidth: true
-            spacing: 5
+            spacing: 6
             ComboBox {
                 id: arbBitrateCombo
                 Layout.fillWidth: true
@@ -250,10 +250,10 @@ Item {
                 font.pixelSize: 10
                 model: root.arbitrationBitrates.map(function(v) { return root.bitrateLabel(v) })
                 enabled: !linkManager.connected && !linkManager.connecting
-                background: Rectangle { color: "#22272E"; border.color: arbBitrateCombo.activeFocus ? "#7AB7FF" : "#3A424C"; radius: 6 }
+                background: Rectangle { color: themeManager.isDark ? "#22272E" : "#F9FAFB"; border.color: arbBitrateCombo.activeFocus ? (themeManager.isDark ? "#7AB7FF" : "#2563EB") : (themeManager.isDark ? "#3A424C" : "#D1D5DB"); radius: 6 }
                 contentItem: Text {
-                    text: (formatCombo.currentIndex === 1 ? "仲裁 " : "") + arbBitrateCombo.currentText
-                    color: "#D4D4D4"
+                    text: arbBitrateCombo.currentText
+                    color: themeManager.isDark ? "#D4D4D4" : "#111827"
                     font: arbBitrateCombo.font
                     leftPadding: 6
                     rightPadding: 6
@@ -277,10 +277,10 @@ Item {
                 font.pixelSize: 10
                 model: root.dataBitrates.map(function(v) { return root.bitrateLabel(v) })
                 enabled: formatCombo.currentIndex === 1 && !linkManager.connected && !linkManager.connecting
-                background: Rectangle { color: "#22272E"; border.color: dataBitrateCombo.activeFocus ? "#7AB7FF" : "#3A424C"; radius: 6 }
+                background: Rectangle { color: themeManager.isDark ? "#22272E" : "#F9FAFB"; border.color: dataBitrateCombo.activeFocus ? (themeManager.isDark ? "#7AB7FF" : "#2563EB") : (themeManager.isDark ? "#3A424C" : "#D1D5DB"); radius: 6 }
                 contentItem: Text {
-                    text: "数据 " + dataBitrateCombo.currentText
-                    color: "#D4D4D4"
+                    text: dataBitrateCombo.currentText
+                    color: themeManager.isDark ? "#D4D4D4" : "#111827"
                     font: dataBitrateCombo.font
                     leftPadding: 6
                     rightPadding: 6

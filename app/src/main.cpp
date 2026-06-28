@@ -1,5 +1,5 @@
 /**
- * KPtools - 协议调试工具
+ * ProtoTools - 协议调试工具
  * main.cpp - 应用入口
  *
  * 架构参照 SerialStudio: ModuleManager 管理 QML 注册和模块初始化，
@@ -48,10 +48,10 @@ int main(int argc, char *argv[])
 #endif
 
     QApplication app(argc, argv);
-    app.setApplicationName("KPtools");
+    app.setApplicationName("ProtoTools");
     app.setApplicationVersion("1.0.0");
-    app.setOrganizationName("KPtools");
-    app.setOrganizationDomain("kptools.app");
+    app.setOrganizationName("ProtoTools");
+    app.setOrganizationDomain("prototools.app");
     app.setWindowIcon(QIcon(QStringLiteral(":/ProtoDebug/proto_512.png")));
     QQuickStyle::setStyle("Fusion");
 
@@ -150,8 +150,8 @@ int main(int argc, char *argv[])
                 return ok ? decimal : fallback;
             };
             if (auto *settings = SettingsManager::instance()) {
-                fw.setSrcAddr(parseSettingInt(settings->loadValue(QStringLiteral("upgrade.src"), QStringLiteral("0x0101")), 0x0101));
-                fw.setDstAddr(parseSettingInt(settings->loadValue(QStringLiteral("upgrade.dst"), QStringLiteral("0x0500")), 0x0500));
+                fw.setSrcAddr(parseSettingInt(settings->loadValue(QStringLiteral("upgrade.src"), QStringLiteral("0x10")), 0x10));
+                fw.setDstAddr(parseSettingInt(settings->loadValue(QStringLiteral("upgrade.dst"), QStringLiteral("0x05")), 0x05));
                 fw.setPacketSize(settings->loadValue(QStringLiteral("upgrade.packetSize"), fw.packetSize()).toInt());
             }
             cm.setLinkType(QStringLiteral("USB"));
@@ -251,8 +251,8 @@ int main(int argc, char *argv[])
             baudRate = parseInt(baudArg, baudRate);
 
         fw.setFirmwarePath(firmwarePath);
-        fw.setSrcAddr(parseInt(settingsManager.loadValue(QStringLiteral("upgrade.src"), QStringLiteral("0x0101")), 0x0101));
-        fw.setDstAddr(parseInt(settingsManager.loadValue(QStringLiteral("upgrade.dst"), QStringLiteral("0x0500")), 0x0500));
+        fw.setSrcAddr(parseInt(settingsManager.loadValue(QStringLiteral("upgrade.src"), QStringLiteral("0x10")), 0x10));
+        fw.setDstAddr(parseInt(settingsManager.loadValue(QStringLiteral("upgrade.dst"), QStringLiteral("0x05")), 0x05));
         const QString srcArg = optionValue(QStringLiteral("--src"));
         const QString dstArg = optionValue(QStringLiteral("--dst"));
         if (!srcArg.isEmpty())

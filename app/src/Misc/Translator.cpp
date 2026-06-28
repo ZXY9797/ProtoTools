@@ -13,7 +13,7 @@ Translator &Translator::instance()
 QString Translator::welcomeConsoleText() const
 {
     return QStringLiteral(
-        "KPtools Terminal\n"
+        "ProtoTools Terminal\n"
         "================\n"
         "Connect a device to begin debugging.\n"
     );

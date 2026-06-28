@@ -30,27 +30,7 @@ void QuickCommandManager::loadFromFile(const QString &filePath)
         root["maxHistory"] = 20;
         root["maxDialog"] = 20;
 
-        QJsonArray defaultCmds;
-        const auto appendCommand = [&defaultCmds](const QString &name,
-                                                  const QString &cmdId,
-                                                  const QString &data) {
-            QJsonObject cmd;
-            cmd["name"] = name;
-            cmd["src"] = QStringLiteral("0x0001");
-            cmd["dst"] = QStringLiteral("0x0500");
-            cmd["seq"] = QStringLiteral("0001");
-            cmd["cmdset"] = QStringLiteral("0x00");
-            cmd["cmdid"] = cmdId;
-            cmd["data"] = data;
-            defaultCmds.append(cmd);
-        };
-
-        appendCommand(QStringLiteral("KP2 Ping"), QStringLiteral("0x00"), QString());
-        appendCommand(QStringLiteral("KP2 Get Device Info"), QStringLiteral("0x01"), QString());
-        appendCommand(QStringLiteral("KP2 Enter Upgrade(APP)"), QStringLiteral("0x02"), QStringLiteral("01"));
-        appendCommand(QStringLiteral("KP2 Reboot"), QStringLiteral("0x06"), QStringLiteral("0A 00 00 00 01"));
-
-        root["quickCommands"] = defaultCmds;
+        root["quickCommands"] = QJsonArray();
 
         QFile outFile(path);
         if (outFile.open(QIODevice::WriteOnly | QIODevice::Text))
@@ -92,7 +72,7 @@ void QuickCommandManager::loadFromFile(const QString &filePath)
         QVariantMap cmd;
         cmd["name"] = obj.value(QStringLiteral("name")).toString(QStringLiteral("Unnamed"));
         cmd["src"] = obj.value(QStringLiteral("src")).toString(QStringLiteral("0x0001"));
-        cmd["dst"] = obj.value(QStringLiteral("dst")).toString(QStringLiteral("0x0500"));
+        cmd["dst"] = obj.value(QStringLiteral("dst")).toString(QStringLiteral("0x05"));
         cmd["seq"] = obj.value(QStringLiteral("seq")).toString(QStringLiteral("0001"));
         cmd["cmdset"] = obj.value(QStringLiteral("cmdset")).toString(QStringLiteral("0x00"));
         cmd["cmdid"] = obj.value(QStringLiteral("cmdid")).toString(QStringLiteral("0x00"));
@@ -245,7 +225,7 @@ QVariantMap QuickCommandManager::makeCommand(const QString &name,
     QVariantMap cmd;
     cmd["name"] = name.trimmed().isEmpty() ? QStringLiteral("未命名") : name.trimmed();
     cmd["src"] = src.trimmed().isEmpty() ? QStringLiteral("0x0001") : src.trimmed();
-    cmd["dst"] = dst.trimmed().isEmpty() ? QStringLiteral("0x0500") : dst.trimmed();
+    cmd["dst"] = dst.trimmed().isEmpty() ? QStringLiteral("0x05") : dst.trimmed();
     cmd["seq"] = seq.trimmed().isEmpty() ? QStringLiteral("0001") : seq.trimmed();
     cmd["cmdset"] = cmdset.trimmed().isEmpty() ? QStringLiteral("0x00") : cmdset.trimmed();
     cmd["cmdid"] = cmdid.trimmed().isEmpty() ? QStringLiteral("0x00") : cmdid.trimmed();

@@ -874,7 +874,7 @@ QString LuaEngine::openLuaFileDialog()
         tr("打开 Lua 脚本"), startDir, tr("Lua 脚本 (*.lua);;所有文件 (*)"));
     if (!path.isEmpty()) {
         // 保存目录
-        QSettings settings("KPtools", "KPtools");
+        QSettings settings("ProtoTools", "ProtoTools");
         settings.setValue("script/lastDir", QFileInfo(path).absolutePath());
     }
     return path;
@@ -889,7 +889,7 @@ QString LuaEngine::saveLuaFileDialog(const QString &defaultName)
     QString path = QFileDialog::getSaveFileName(nullptr,
         tr("保存 Lua 脚本"), startDir, tr("Lua 脚本 (*.lua);;所有文件 (*)"));
     if (!path.isEmpty()) {
-        QSettings settings("KPtools", "KPtools");
+        QSettings settings("ProtoTools", "ProtoTools");
         settings.setValue("script/lastDir", QFileInfo(path).absolutePath());
     }
     return path;
@@ -914,7 +914,7 @@ bool LuaEngine::writeTextFile(const QString &filePath, const QString &content)
 
 QString LuaEngine::getLastDir()
 {
-    QSettings settings("KPtools", "KPtools");
+    QSettings settings("ProtoTools", "ProtoTools");
     QString dir = settings.value("script/lastDir").toString();
     if (dir.isEmpty() || !QDir(dir).exists())
         dir = QDir::homePath();

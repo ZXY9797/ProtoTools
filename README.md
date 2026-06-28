@@ -1,14 +1,14 @@
-# KPtools
+# ProtoTools
 
-KPtools 是一个基于 Qt 6 的桌面协议调试和固件升级工具，面向 KP2 协议、嵌入式设备调试和产测升级场景。当前支持 UART、USB Bulk、CAN/CAN FD 和 BLE 链路，并提供协议监控、终端、协议曲线、协议编辑、快捷指令、协议校验、Lua 脚本和固件升级功能。
+ProtoTools 是一个基于 Qt 6 的桌面协议调试和固件升级工具，面向 KP2 协议、嵌入式设备调试和产测升级场景。当前支持 UART、USB Bulk、CAN/CAN FD 和 BLE 链路，并提供协议监控、终端、协议曲线、协议编辑、快捷指令、协议校验、Lua 脚本和固件升级功能。
 
 仓库内保留了当前打包好的 Windows 单文件版本：
 
 ```text
-dist/KPtools.exe
+dist/ProtoTools.exe
 ```
 
-拉下代码后，如果只是使用工具，可以直接双击 `dist/KPtools.exe` 运行，不需要先安装 Qt 或重新编译。硬件链路仍然依赖系统本身具备对应驱动能力，例如 WinUSB、ZLG CAN 设备驱动和蓝牙适配器驱动。
+拉下代码后，如果只是使用工具，可以直接双击 `dist/ProtoTools.exe` 运行，不需要先安装 Qt 或重新编译。硬件链路仍然依赖系统本身具备对应驱动能力，例如 WinUSB、ZLG CAN 设备驱动和蓝牙适配器驱动。
 
 ## 主要功能
 
@@ -20,7 +20,7 @@ dist/KPtools.exe
 - 协议曲线：按 Cmd Set 和 Cmd ID 选择协议帧，从 Data 偏移解析数值，最多显示九条曲线，支持隐藏曲线、60 FPS 刷新和 s/div 时间缩放。
 - Lua 脚本：可过滤监控数据、修改显示颜色、自动回复、解析 Data 并推送曲线值。
 - 固件升级：支持查询版本、单次升级、升级压测、升级进度和成功次数显示。
-- 打包发布：提供 Windows 一键打包脚本，生成可双击运行并随仓库提交的 `dist/KPtools.exe`。
+- 打包发布：提供 Windows 一键打包脚本，生成可双击运行并随仓库提交的 `dist/ProtoTools.exe`。
 
 ## 目录结构
 
@@ -37,7 +37,7 @@ dist/KPtools.exe
 └── CMakeLists.txt
 ```
 
-`build-*`、Qt Creator 用户配置和运行时 `config/settings.ini` 不会提交到仓库。`dist/` 目录只提交 `dist/KPtools.exe`，其他临时打包内容仍会被清理或忽略。
+`build-*`、Qt Creator 用户配置和运行时 `config/settings.ini` 不会提交到仓库。`dist/` 目录只提交 `dist/ProtoTools.exe`，其他临时打包内容仍会被清理或忽略。
 
 ## 最小工具链
 
@@ -62,13 +62,13 @@ Windows 构建推荐环境：
 
 ```powershell
 $env:QtRoot = "D:\software\Qt6.11\6.11.1\msvc2022_64"
-cmd.exe /d /s /c "call ""C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat"" -arch=x64 -host_arch=x64 && cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=""%QtRoot%"" && cmake --build build-release --config Release --target KPtools"
+cmd.exe /d /s /c "call ""C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat"" -arch=x64 -host_arch=x64 && cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=""%QtRoot%"" && cmake --build build-release --config Release --target ProtoTools"
 ```
 
 构建产物位于：
 
 ```text
-build-release/app/KPtools.exe
+build-release/app/ProtoTools.exe
 ```
 
 这个 exe 是普通 Qt 构建产物，调试时可直接使用；发布给其他电脑使用时建议执行下面的打包脚本。
@@ -78,7 +78,7 @@ build-release/app/KPtools.exe
 如果不需要改代码，直接运行仓库中的发布包：
 
 ```text
-dist/KPtools.exe
+dist/ProtoTools.exe
 ```
 
 这个 exe 已经包含 Qt 运行库、MSVC 运行库、QML 插件、应用资源、自带的 `zlg_can_bridge.exe`，以及打包时从本机 ZLG 安装目录收集到的 `zlgcan.dll` 和 x64 `kerneldlls`。仓库不单独提交 ZLG 官方 DLL 文件；它们只在打包阶段从已安装 ZLG 运行库的机器中收集并封装进 exe。
@@ -123,21 +123,21 @@ powershell -ExecutionPolicy Bypass -File scripts\package-windows-single-exe.ps1 
 2. 将 `app/tools/zlg_can_bridge.py` 打包成 `zlg_can_bridge.exe`。
 3. 使用 `windeployqt` 收集 Qt 运行库和 QML 插件。
 4. 复制 MSVC 运行库、ZLG CAN DLL 和可用的 x64 ZLG 子 DLL。
-5. 使用 PyInstaller 封装成单文件 `KPtools.exe`。
+5. 使用 PyInstaller 封装成单文件 `ProtoTools.exe`。
 6. 可选执行启动测试，验证 exe 可以在精简 PATH 下打开。
 7. 删除临时构建和部署目录，只保留最终 exe。
 
 最终产物：
 
 ```text
-dist/KPtools.exe
+dist/ProtoTools.exe
 ```
 
-提交发布包时只需要确认 `dist/KPtools.exe` 已更新，然后正常 `git add dist/KPtools.exe README.md .gitignore` 并提交即可。仓库忽略规则会继续忽略其他 exe，只放行这个发布包。
+提交发布包时只需要确认 `dist/ProtoTools.exe` 已更新，然后正常 `git add dist/ProtoTools.exe README.md .gitignore` 并提交即可。仓库忽略规则会继续忽略其他 exe，只放行这个发布包。
 
 ## 常用操作
 
-1. 打开 `KPtools.exe`。
+1. 打开 `ProtoTools.exe`。
 2. 在右侧链路配置中选择 `UART`、`USB`、`CAN` 或 `BLE`。
 3. 填写链路参数并点击 `打开连接`。
 4. 默认进入固件升级页面，可先点击 `查询版本` 验证链路。

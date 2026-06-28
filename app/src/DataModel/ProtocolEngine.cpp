@@ -35,6 +35,38 @@ ProtocolEngine::ProtocolEngine(QObject *parent)
 {
 }
 
+// ── ver_len 编解码 ──
+
+quint16 ProtocolEngine::packVerLen(quint8 ver, quint16 totalLen)
+{
+    return (totalLen & VER_LEN_LEN_MASK)
+         | (static_cast<quint16>(ver & VER_LEN_VER_MASK) << VER_LEN_VER_SHIFT);
+}
+
+quint8 ProtocolEngine::unpackVer(quint16 verLen)
+{
+    return static_cast<quint8>((verLen >> VER_LEN_VER_SHIFT) & VER_LEN_VER_MASK);
+}
+
+quint16 ProtocolEngine::unpackLen(quint16 verLen)
+{
+    return verLen & VER_LEN_LEN_MASK;
+}
+
+// ── cmd_type 编码 ──
+
+quint8 ProtocolEngine::packCmdType(bool isAck, quint8 ackMode, quint8 encMode,
+                                    quint8 priority, bool retransmit)
+{
+    return (isAck ? 1 : 0)
+         | ((ackMode & CMD_TYPE_ACK_MODE_MASK) << CMD_TYPE_ACK_MODE_SHIFT)
+         | ((encMode & CMD_TYPE_ENC_MODE_MASK) << CMD_TYPE_ENC_MODE_SHIFT)
+         | ((priority & CMD_TYPE_PRIORITY_MASK) << CMD_TYPE_PRIORITY_SHIFT)
+         | ((retransmit ? 1 : 0) << CMD_TYPE_RETRANSMIT_SHIFT);
+}
+
+// ── 帧解析 ──
+
 QVariantMap ProtocolEngine::parseHexFrame(const QString &hex)
 {
     QVariantMap result;
@@ -83,94 +115,82 @@ QVariantMap ProtocolEngine::parseFrameDetailed(const QByteArray &rawData)
                         .arg(MIN_FRAME_SIZE));
     }
 
-    const quint8 sop = static_cast<quint8>(rawData[0]);
-    if (sop != SOP) {
-        return fail(QStringLiteral("SOP错误: 实际 %1, 应为 0xAA").arg(hexByte(sop)));
+    const quint8 sof = static_cast<quint8>(rawData[0]);
+    if (sof != SOF) {
+        return fail(QStringLiteral("SOF错误: 实际 %1, 应为 0xAA").arg(hexByte(sof)));
     }
 
-    const quint8 version = static_cast<quint8>(rawData[1]);
-    if (version != PROTO_VER) {
-        return fail(QStringLiteral("协议版本错误: 实际 %1, 应为 0x01").arg(hexByte(version)));
+    const quint16 verLen = readLe16(rawData, 1);
+    const quint8 version = unpackVer(verLen);
+    const quint16 totalLen = unpackLen(verLen);
+
+    if (totalLen < MIN_FRAME_SIZE || totalLen > rawData.size()) {
+        return fail(QStringLiteral("VerLen帧长错误: 声明 %1 字节, 实际输入 %2 字节")
+                        .arg(totalLen).arg(rawData.size()));
     }
 
-    const quint16 sender = readLe16(rawData, 2);
-    const quint16 receiver = readLe16(rawData, 4);
-    const quint16 payloadLen = readLe16(rawData, 6);
-    const quint8 nextHeader = static_cast<quint8>(rawData[8]);
-    const quint8 headerCrc = static_cast<quint8>(rawData[9]);
-    const int totalLength = HEADER_SIZE + payloadLen + CRC16_SIZE;
-    frame["totalLength"] = totalLength;
-    frame["payloadLen"] = QString::number(payloadLen);
-
-    if (payloadLen < GENERIC_HEADER_SIZE) {
-        return fail(QStringLiteral("Payload长度错误: 实际 %1 字节, Generic Header 至少 %2 字节")
-                        .arg(payloadLen)
-                        .arg(GENERIC_HEADER_SIZE));
-    }
-
-    if (rawData.size() < totalLength) {
-        return fail(QStringLiteral("帧长度不足: 头部声明需要 %1 字节, 实际 %2 字节")
-                        .arg(totalLength)
-                        .arg(rawData.size()));
-    }
-
-    if (rawData.size() > totalLength) {
+    if (rawData.size() > totalLen) {
         return fail(QStringLiteral("帧长度不匹配: 头部声明 %1 字节, 实际输入 %2 字节")
-                        .arg(totalLength)
-                        .arg(rawData.size()));
+                        .arg(totalLen).arg(rawData.size()));
     }
 
-    if (nextHeader != NEXT_HEADER_GENERIC) {
-        return fail(QStringLiteral("NextHeader错误: 实际 %1, 应为 0x01").arg(hexByte(nextHeader)));
+    const QByteArray packet = rawData.left(totalLen);
+
+    // BCC 校验前 3 字节
+    const quint8 headCrcStored = static_cast<quint8>(packet[3]);
+    const quint8 headCrcCalc = bcc(packet.left(3));
+    if (headCrcStored != headCrcCalc) {
+        return fail(QStringLiteral("HeadCRC(BCC)校验失败: 帧内 %1, 计算 %2")
+                        .arg(hexByte(headCrcStored), hexByte(headCrcCalc)));
     }
 
-    const QByteArray header = rawData.left(HEADER_SIZE);
-    const QByteArray payload = rawData.mid(HEADER_SIZE, payloadLen);
-    const quint16 storedCrc = readLe16(rawData, HEADER_SIZE + payloadLen);
-    const quint8 calcHeaderCrc = crc8(header.left(HEADER_SIZE - 1));
-    const quint16 calcPayloadCrc = crc16(payload);
+    // CRC-16/CCITT 校验
+    const size_t crcAreaLen = totalLen - CRC16_SIZE;
+    const quint16 storedCrc = static_cast<quint16>(packet[crcAreaLen])
+                            | (static_cast<quint16>(packet[crcAreaLen + 1]) << 8);
+    const quint16 calcCrc = crc16(packet.left(crcAreaLen));
 
-    const quint16 seq = readLe16(payload, 0);
-    const quint16 cmd = readLe16(payload, 2);
-    const quint16 flags = readLe16(payload, 4);
-    const QByteArray data = payload.mid(GENERIC_HEADER_SIZE);
-    const quint8 cmdset = static_cast<quint8>((cmd >> 8) & 0xFF);
-    const quint8 cmdid = static_cast<quint8>(cmd & 0xFF);
-    const bool isResponse = (flags & FLAG_RESPONSE) != 0;
+    const quint8 cmdType = static_cast<quint8>(packet[4]);
+    const quint8 sender = static_cast<quint8>(packet[5]);
+    const quint8 receiver = static_cast<quint8>(packet[6]);
+    const quint16 seq = readLe16(packet, 7);
+    const quint8 cmdset = static_cast<quint8>(packet[9]);
+    const quint8 cmdid = static_cast<quint8>(packet[10]);
 
-    frame["sender"] = hexWord(sender);
-    frame["receiver"] = hexWord(receiver);
+    const size_t dataLen = totalLen - HEADER_SIZE - CRC16_SIZE;
+    const QByteArray data = (dataLen > 0) ? packet.mid(HEADER_SIZE, static_cast<int>(dataLen)) : QByteArray();
+
+    const bool isAck = (cmdType & CMD_TYPE_IS_ACK_MASK) != 0;
+    const quint8 ackMode = (cmdType >> CMD_TYPE_ACK_MODE_SHIFT) & CMD_TYPE_ACK_MODE_MASK;
+    const quint8 encMode = (cmdType >> CMD_TYPE_ENC_MODE_SHIFT) & CMD_TYPE_ENC_MODE_MASK;
+    const quint8 priority = (cmdType >> CMD_TYPE_PRIORITY_SHIFT) & CMD_TYPE_PRIORITY_MASK;
+    const bool retransmit = (cmdType >> CMD_TYPE_RETRANSMIT_SHIFT) & CMD_TYPE_RETRANSMIT_MASK;
+
+    frame["totalLength"] = totalLen;
+    frame["version"] = QString::number(version);
+    frame["sender"] = hexByte(sender);
+    frame["receiver"] = hexByte(receiver);
     frame["seq"] = QStringLiteral("%1").arg(seq, 4, 10, QChar('0'));
-    frame["type"] = isResponse ? QStringLiteral("ACK") : QStringLiteral("REQ");
-    frame["cmd"] = hexWord(cmd);
+    frame["type"] = isAck ? QStringLiteral("ACK") : QStringLiteral("REQ");
+    frame["cmd"] = hexWord(static_cast<quint16>((cmdset << 8) | cmdid));
     frame["cmdSet"] = hexByte(cmdset);
     frame["cmdId"] = hexByte(cmdid);
-    frame["len"] = QString::number(totalLength);
+    frame["len"] = QString::number(totalLen);
     frame["data"] = bytesToHex(data);
     frame["dataLen"] = data.size();
-    frame["attr"] = hexWord(flags);
-    frame["flags"] = hexWord(flags);
-    frame["nextHeader"] = hexByte(nextHeader);
-    frame["crc8"] = hexByte(headerCrc);
-    frame["crc8Calc"] = hexByte(calcHeaderCrc);
-    frame["headerCrc"] = hexByte(headerCrc);
-    frame["headerCrcCalc"] = hexByte(calcHeaderCrc);
+    frame["cmdType"] = hexByte(cmdType);
+    frame["ackMode"] = QString::number(ackMode);
+    frame["encMode"] = QString::number(encMode);
+    frame["priority"] = QString::number(priority);
+    frame["retransmit"] = retransmit;
+    frame["headCrc"] = hexByte(headCrcStored);
+    frame["headCrcCalc"] = hexByte(headCrcCalc);
     frame["crc"] = hexWord(storedCrc);
     frame["crc16"] = hexWord(storedCrc);
-    frame["crc16Calc"] = hexWord(calcPayloadCrc);
-    frame["crcCalc"] = hexWord(calcPayloadCrc);
-    frame["crcValid"] = (calcHeaderCrc == headerCrc) && (calcPayloadCrc == storedCrc);
-    frame["rawHex"] = bytesToHex(rawData);
-
-    if (calcHeaderCrc != headerCrc) {
-        return fail(QStringLiteral("CRC8校验失败: 帧内 %1, 计算 %2")
-                        .arg(hexByte(headerCrc), hexByte(calcHeaderCrc)));
-    }
-
-    if (calcPayloadCrc != storedCrc) {
-        return fail(QStringLiteral("CRC16校验失败: 帧内 %1, 计算 %2")
-                        .arg(hexWord(storedCrc), hexWord(calcPayloadCrc)));
-    }
+    frame["crc16Calc"] = hexWord(calcCrc);
+    frame["crcCalc"] = hexWord(calcCrc);
+    frame["crcValid"] = (headCrcStored == headCrcCalc) && (calcCrc == storedCrc);
+    frame["rawHex"] = bytesToHex(packet);
 
     frame["valid"] = true;
     frame["error"] = QString();
@@ -183,105 +203,101 @@ QVariantMap ProtocolEngine::parseFrame(const QByteArray &rawData)
     if (rawData.size() < MIN_FRAME_SIZE)
         return frame;
 
-    if (static_cast<quint8>(rawData[0]) != SOP)
+    if (static_cast<quint8>(rawData[0]) != SOF)
         return frame;
 
-    const quint8 version = static_cast<quint8>(rawData[1]);
-    if (version != PROTO_VER)
+    const quint16 verLen = readLe16(rawData, 1);
+    const quint16 totalLen = unpackLen(verLen);
+
+    if (totalLen < MIN_FRAME_SIZE || rawData.size() < totalLen)
         return frame;
 
-    const quint16 sender = readLe16(rawData, 2);
-    const quint16 receiver = readLe16(rawData, 4);
-    const quint16 payloadLen = readLe16(rawData, 6);
-    const quint8 nextHeader = static_cast<quint8>(rawData[8]);
-    const quint8 headerCrc = static_cast<quint8>(rawData[9]);
-    const int totalLength = HEADER_SIZE + payloadLen + CRC16_SIZE;
+    const QByteArray packet = rawData.left(totalLen);
 
-    if (payloadLen < GENERIC_HEADER_SIZE || rawData.size() < totalLength)
+    const quint8 headCrcStored = static_cast<quint8>(packet[3]);
+    const quint8 headCrcCalc = bcc(packet.left(3));
+    if (headCrcStored != headCrcCalc)
         return frame;
 
-    const QByteArray packet = rawData.left(totalLength);
-    const QByteArray header = packet.left(HEADER_SIZE);
-    const QByteArray payload = packet.mid(HEADER_SIZE, payloadLen);
-    const quint16 storedCrc = readLe16(packet, HEADER_SIZE + payloadLen);
-    const quint8 calcHeaderCrc = crc8(header.left(HEADER_SIZE - 1));
-    const quint16 calcPayloadCrc = crc16(payload);
-
-    if (nextHeader != NEXT_HEADER_GENERIC)
+    const size_t crcAreaLen = totalLen - CRC16_SIZE;
+    const quint16 storedCrc = static_cast<quint16>(packet[crcAreaLen])
+                            | (static_cast<quint16>(packet[crcAreaLen + 1]) << 8);
+    const quint16 calcCrc = crc16(packet.left(crcAreaLen));
+    if (calcCrc != storedCrc)
         return frame;
 
-    const quint16 seq = readLe16(payload, 0);
-    const quint16 cmd = readLe16(payload, 2);
-    const quint16 flags = readLe16(payload, 4);
-    const QByteArray data = payload.mid(GENERIC_HEADER_SIZE);
-    const quint8 cmdset = static_cast<quint8>((cmd >> 8) & 0xFF);
-    const quint8 cmdid = static_cast<quint8>(cmd & 0xFF);
-    const bool isResponse = (flags & FLAG_RESPONSE) != 0;
+    const quint8 cmdType = static_cast<quint8>(packet[4]);
+    const quint8 sender = static_cast<quint8>(packet[5]);
+    const quint8 receiver = static_cast<quint8>(packet[6]);
+    const quint16 seq = readLe16(packet, 7);
+    const quint8 cmdset = static_cast<quint8>(packet[9]);
+    const quint8 cmdid = static_cast<quint8>(packet[10]);
+    const size_t dataLen = totalLen - HEADER_SIZE - CRC16_SIZE;
+    const QByteArray data = (dataLen > 0) ? packet.mid(HEADER_SIZE, static_cast<int>(dataLen)) : QByteArray();
+    const bool isAck = (cmdType & CMD_TYPE_IS_ACK_MASK) != 0;
 
     frame["timestamp"] = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
-    frame["sender"] = hexWord(sender);
-    frame["receiver"] = hexWord(receiver);
+    frame["sender"] = hexByte(sender);
+    frame["receiver"] = hexByte(receiver);
     frame["seq"] = QStringLiteral("%1").arg(seq, 4, 10, QChar('0'));
-    frame["type"] = isResponse ? QStringLiteral("ACK") : QStringLiteral("REQ");
-    frame["cmd"] = hexWord(cmd);
+    frame["type"] = isAck ? QStringLiteral("ACK") : QStringLiteral("REQ");
+    frame["cmd"] = hexWord(static_cast<quint16>((cmdset << 8) | cmdid));
     frame["cmdSet"] = hexByte(cmdset);
     frame["cmdId"] = hexByte(cmdid);
-    frame["len"] = QString::number(totalLength);
-    frame["payloadLen"] = QString::number(payloadLen);
+    frame["len"] = QString::number(totalLen);
+    frame["payloadLen"] = QString::number(dataLen);
     frame["data"] = bytesToHex(data);
-    frame["attr"] = hexWord(flags);
-    frame["flags"] = hexWord(flags);
-    frame["nextHeader"] = hexByte(nextHeader);
-    frame["crc8"] = hexByte(headerCrc);
-    frame["crc8Calc"] = hexByte(calcHeaderCrc);
+    frame["cmdType"] = hexByte(cmdType);
+    frame["headCrc"] = hexByte(headCrcStored);
+    frame["headCrcCalc"] = hexByte(headCrcCalc);
     frame["crc"] = hexWord(storedCrc);
     frame["crc16"] = hexWord(storedCrc);
-    frame["crc16Calc"] = hexWord(calcPayloadCrc);
-    frame["crcValid"] = (calcHeaderCrc == headerCrc) && (calcPayloadCrc == storedCrc);
+    frame["crc16Calc"] = hexWord(calcCrc);
+    frame["crcValid"] = (headCrcStored == headCrcCalc) && (calcCrc == storedCrc);
     frame["rawHex"] = bytesToHex(packet);
 
     return frame;
 }
 
-QByteArray ProtocolEngine::buildFrame(quint16 sender, quint16 receiver,
-                                      quint8 attr, quint16 seq,
+QByteArray ProtocolEngine::buildFrame(quint8 sender, quint8 receiver,
+                                      quint8 cmdType, quint16 seq,
                                       quint8 cmdset, quint8 cmdid,
                                       const QByteArray &data)
 {
-    QByteArray payload;
-    appendLe16(payload, seq);
-    appendLe16(payload, static_cast<quint16>((cmdset << 8) | cmdid));
-
-    quint16 flags = static_cast<quint16>(attr & 0x03);
-    if ((flags & FLAG_RESPONSE) == 0)
-        flags |= FLAG_ACK_REQUIRED;
-    appendLe16(payload, flags);
-    payload.append(data);
+    const quint16 totalLen = HEADER_SIZE + data.size() + CRC16_SIZE;
 
     QByteArray frame;
-    frame.append(static_cast<char>(SOP));
-    frame.append(static_cast<char>(PROTO_VER));
-    appendLe16(frame, sender);
-    appendLe16(frame, receiver);
-    appendLe16(frame, static_cast<quint16>(payload.size()));
-    frame.append(static_cast<char>(NEXT_HEADER_GENERIC));
-    frame.append(static_cast<char>(crc8(frame)));
-    frame.append(payload);
-    appendLe16(frame, crc16(payload));
+    frame.append(static_cast<char>(SOF));
+
+    const quint16 verLen = packVerLen(1, totalLen);
+    frame.append(static_cast<char>(verLen & 0xFF));
+    frame.append(static_cast<char>((verLen >> 8) & 0xFF));
+
+    frame.append(static_cast<char>(bcc(frame)));
+
+    frame.append(static_cast<char>(cmdType));
+    frame.append(static_cast<char>(sender));
+    frame.append(static_cast<char>(receiver));
+
+    frame.append(static_cast<char>(seq & 0xFF));
+    frame.append(static_cast<char>((seq >> 8) & 0xFF));
+
+    frame.append(static_cast<char>(cmdset));
+    frame.append(static_cast<char>(cmdid));
+
+    frame.append(data);
+
+    appendLe16(frame, crc16(frame));
 
     return frame;
 }
 
-quint8 ProtocolEngine::crc8(const QByteArray &data)
+quint8 ProtocolEngine::bcc(const QByteArray &data)
 {
-    quint8 crc = 0x00;
-    for (char ch : data) {
-        crc ^= static_cast<quint8>(ch);
-        for (int i = 0; i < 8; ++i)
-            crc = (crc & 0x01) ? static_cast<quint8>((crc >> 1) ^ 0x8C)
-                               : static_cast<quint8>(crc >> 1);
-    }
-    return crc;
+    quint8 sum = 0;
+    for (char ch : data)
+        sum ^= static_cast<quint8>(ch);
+    return sum;
 }
 
 quint16 ProtocolEngine::crc16(const QByteArray &data)

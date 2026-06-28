@@ -17,18 +17,18 @@ Item {
     property int labelWidth: 52
     property int actionWidth: 32
 
-    readonly property color surface: "#151C24"
-    readonly property color surfaceHover: "#1B2630"
-    readonly property color fieldBg: "#202832"
-    readonly property color outline: "#33404A"
-    readonly property color outlineActive: "#69AEEB"
-    readonly property color textPrimary: "#E2E8EF"
-    readonly property color textSecondary: "#AEB7C2"
-    readonly property color textMuted: "#667085"
-    readonly property color accent: "#2F8DFF"
-    readonly property color success: "#4EC9B0"
-    readonly property color warning: "#D4A83B"
-    readonly property color danger: "#FF7F8D"
+    readonly property color surface: themeManager.isDark ? "#131920" : "#FFFFFF"
+    readonly property color surfaceHover: themeManager.isDark ? "#1A222C" : "#F3F4F6"
+    readonly property color fieldBg: themeManager.isDark ? "#0F141B" : "#F9FAFB"
+    readonly property color outline: themeManager.isDark ? "#253040" : "#D1D5DB"
+    readonly property color outlineActive: themeManager.isDark ? "#3B8AFF" : "#2563EB"
+    readonly property color textPrimary: themeManager.isDark ? "#E8EDF5" : "#111827"
+    readonly property color textSecondary: themeManager.isDark ? "#9CAAB8" : "#6B7280"
+    readonly property color textMuted: themeManager.isDark ? "#607080" : "#9CA3AF"
+    readonly property color accent: themeManager.isDark ? "#3B8AFF" : "#2563EB"
+    readonly property color success: themeManager.isDark ? "#34D399" : "#059669"
+    readonly property color warning: themeManager.isDark ? "#FBBF24" : "#D97706"
+    readonly property color danger: themeManager.isDark ? "#F87171" : "#DC2626"
     property string deviceFilterText: settingsManager.loadValue("ble.deviceFilter", "")
     property var filteredDeviceIndexes: []
 
@@ -369,10 +369,10 @@ Item {
         }
         background: Rectangle {
             radius: 7
-            color: iconButton.scanning ? "#102E29"
-                  : (iconButton.down ? "#236EA9" : (iconButton.hovered ? root.surfaceHover : root.surface))
+            color: iconButton.scanning ? (themeManager.isDark ? "#102E29" : "#ECFDF5")
+                  : (iconButton.down ? (themeManager.isDark ? "#236EA9" : "#1D4ED8") : (iconButton.hovered ? root.surfaceHover : root.surface))
             border.color: iconButton.activeFocus ? root.outlineActive
-                         : (iconButton.scanning ? "#2D7F6D" : root.outline)
+                         : (iconButton.scanning ? root.success : root.outline)
         }
         ToolTip.visible: hovered && tooltip.length > 0
         ToolTip.text: tooltip
@@ -384,7 +384,7 @@ Item {
         Layout.fillWidth: true
         implicitHeight: 28
         radius: 7
-        color: "#151C24"
+        color: root.surface
         border.color: root.outline
 
         RowLayout {

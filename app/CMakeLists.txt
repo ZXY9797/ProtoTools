@@ -1,5 +1,5 @@
-﻿#
-# KPtools - 鍗忚璋冭瘯宸ュ叿
+#
+# ProtoTools - 协议调试工具
 # app/CMakeLists.txt
 #
 
@@ -257,29 +257,29 @@ set(QML_SOURCES
 #-----------------------------------------------------------------------------
 # Executable
 #-----------------------------------------------------------------------------
-qt_add_executable(KPtools
+qt_add_executable(ProtoTools
     ${SOURCES}
     ${HEADERS}
 )
 
 if(WIN32)
-    target_sources(KPtools PRIVATE rcc/KPtools.rc)
-    set_target_properties(KPtools PROPERTIES WIN32_EXECUTABLE TRUE)
+    target_sources(ProtoTools PRIVATE rcc/ProtoTools.rc)
+    set_target_properties(ProtoTools PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
-target_include_directories(KPtools PRIVATE
+target_include_directories(ProtoTools PRIVATE
     ${LUA_SRC_DIR}
     ${QCE_DIR}/include
 )
 
 if(MSVC)
-    target_compile_options(KPtools PRIVATE $<$<CONFIG:Release>:/Od /Ob0>)
+    target_compile_options(ProtoTools PRIVATE $<$<CONFIG:Release>:/Od /Ob0>)
 endif()
 
 #-----------------------------------------------------------------------------
 # QML resources
 #-----------------------------------------------------------------------------
-qt_add_resources(KPtools "qml"
+qt_add_resources(ProtoTools "qml"
     PREFIX "/ProtoDebug"
     FILES ${QML_SOURCES}
 )
@@ -287,7 +287,7 @@ qt_add_resources(KPtools "qml"
 #-----------------------------------------------------------------------------
 # Icon resources
 #-----------------------------------------------------------------------------
-qt_add_resources(KPtools "icons"
+qt_add_resources(ProtoTools "icons"
     PREFIX "/ProtoDebug"
     FILES
         rcc/icons/proto_512.png
@@ -301,7 +301,7 @@ qt_add_resources(KPtools "icons"
 #-----------------------------------------------------------------------------
 # QCodeEditor 璧勬簮
 #-----------------------------------------------------------------------------
-qt_add_resources(KPtools "qcodeeditor_resources"
+qt_add_resources(ProtoTools "qcodeeditor_resources"
     PREFIX "/"
     FILES ${QCE_RES_FILES}
 )
@@ -309,7 +309,7 @@ qt_add_resources(KPtools "qcodeeditor_resources"
 #-----------------------------------------------------------------------------
 # Link libraries
 #-----------------------------------------------------------------------------
-target_link_libraries(KPtools PRIVATE
+target_link_libraries(ProtoTools PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Quick
@@ -318,48 +318,105 @@ target_link_libraries(KPtools PRIVATE
 )
 
 if(Qt6SerialPort_FOUND)
-    target_link_libraries(KPtools PRIVATE Qt6::SerialPort)
+    target_link_libraries(ProtoTools PRIVATE Qt6::SerialPort)
 endif()
 
 if(Qt6Bluetooth_FOUND)
-    target_link_libraries(KPtools PRIVATE Qt6::Bluetooth)
+    target_link_libraries(ProtoTools PRIVATE Qt6::Bluetooth)
 endif()
 
 if(WIN32)
-    target_link_libraries(KPtools PRIVATE setupapi winusb)
+    target_link_libraries(ProtoTools PRIVATE setupapi winusb)
 else()
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
         pkg_check_modules(LIBUSB QUIET libusb-1.0)
     endif()
     if(LIBUSB_FOUND)
-        target_compile_definitions(KPtools PRIVATE HAS_LIBUSB)
-        target_include_directories(KPtools PRIVATE ${LIBUSB_INCLUDE_DIRS})
-        target_link_libraries(KPtools PRIVATE ${LIBUSB_LIBRARIES})
+        target_compile_definitions(ProtoTools PRIVATE HAS_LIBUSB)
+        target_include_directories(ProtoTools PRIVATE ${LIBUSB_INCLUDE_DIRS})
+        target_link_libraries(ProtoTools PRIVATE ${LIBUSB_LIBRARIES})
     else()
         message(WARNING "libusb-1.0 not found, USB bulk backend disabled on non-Windows builds")
     endif()
 endif()
 
-add_custom_command(TARGET KPtools POST_BUILD
+add_custom_command(TARGET ProtoTools POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/zlg_can_bridge.py"
-        "$<TARGET_FILE_DIR:KPtools>/zlg_can_bridge.py"
+        "$<TARGET_FILE_DIR:ProtoTools>/zlg_can_bridge.py"
     COMMENT "Copy ZLG CAN bridge helper"
 )
 
 if(APPLE)
     find_library(COCOA_LIBRARY Cocoa REQUIRED)
-    target_link_libraries(KPtools PRIVATE ${COCOA_LIBRARY})
+    target_link_libraries(ProtoTools PRIVATE ${COCOA_LIBRARY})
 endif()
 
 #-----------------------------------------------------------------------------
 # macOS bundle
 #-----------------------------------------------------------------------------
 if(APPLE)
-    set_target_properties(KPtools PROPERTIES
+    set_target_properties(ProtoTools PROPERTIES
         MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_BUNDLE_NAME "KPtools"
+        MACOSX_BUNDLE_BUNDLE_NAME "ProtoTools"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "app.prototools"
+        MACOSX_BUNDLE_ICON_FILE "ProtoTools"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in"
+    )
+    set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/rcc/icons/ProtoTools.icns)
+    set_source_files_properties(${APP_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+    target_sources(ProtoTools PRIVATE ${APP_ICON})
+
+    add_custom_command(TARGET ProtoTools POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E remove_directory
+            "$<TARGET_BUNDLE_DIR:ProtoTools>/Contents/MacOS/config"
+        COMMAND codesign --force --sign - --entitlements
+            "${CMAKE_CURRENT_SOURCE_DIR}/ProtoDebug.entitlements"
+            "$<TARGET_BUNDLE_DIR:ProtoTools>"
+        COMMENT "Ad-hoc signing with Bluetooth entitlements"
+    )
+endif()
+
+if(Qt6Bluetooth_FOUND)
+    target_link_libraries(ProtoTools PRIVATE Qt6::Bluetooth)
+endif()
+
+if(WIN32)
+    target_link_libraries(ProtoTools PRIVATE setupapi winusb)
+else()
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(LIBUSB QUIET libusb-1.0)
+    endif()
+    if(LIBUSB_FOUND)
+        target_compile_definitions(ProtoTools PRIVATE HAS_LIBUSB)
+        target_include_directories(ProtoTools PRIVATE ${LIBUSB_INCLUDE_DIRS})
+        target_link_libraries(ProtoTools PRIVATE ${LIBUSB_LIBRARIES})
+    else()
+        message(WARNING "libusb-1.0 not found, USB bulk backend disabled on non-Windows builds")
+    endif()
+endif()
+
+add_custom_command(TARGET ProtoTools POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/zlg_can_bridge.py"
+        "$<TARGET_FILE_DIR:ProtoTools>/zlg_can_bridge.py"
+    COMMENT "Copy ZLG CAN bridge helper"
+)
+
+if(APPLE)
+    find_library(COCOA_LIBRARY Cocoa REQUIRED)
+    target_link_libraries(ProtoTools PRIVATE ${COCOA_LIBRARY})
+endif()
+
+#-----------------------------------------------------------------------------
+# macOS bundle
+#-----------------------------------------------------------------------------
+if(APPLE)
+    set_target_properties(ProtoTools PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_BUNDLE_NAME "ProtoTools"
         MACOSX_BUNDLE_GUI_IDENTIFIER "app.kptools"
         MACOSX_BUNDLE_ICON_FILE "ProtoDebug"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in"
@@ -367,16 +424,16 @@ if(APPLE)
     # 澶嶅埗鍥炬爣鍒?bundle
     set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/rcc/icons/ProtoDebug.icns)
     set_source_files_properties(${APP_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-    target_sources(KPtools PRIVATE ${APP_ICON})
+    target_sources(ProtoTools PRIVATE ${APP_ICON})
 
     # 钃濈墮鏉冮檺绛惧悕锛堥槻姝?macOS SIGKILL锛?
     # 鍏堟竻鐞?bundle 鍐呮畫鐣欑殑閰嶇疆鏂囦欢锛堟棫鐗?SettingsManager 閬楃暀锛?
-    add_custom_command(TARGET KPtools POST_BUILD
+    add_custom_command(TARGET ProtoTools POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E remove_directory
-            "$<TARGET_BUNDLE_DIR:KPtools>/Contents/MacOS/config"
+            "$<TARGET_BUNDLE_DIR:ProtoTools>/Contents/MacOS/config"
         COMMAND codesign --force --sign - --entitlements
             "${CMAKE_CURRENT_SOURCE_DIR}/ProtoDebug.entitlements"
-            "$<TARGET_BUNDLE_DIR:KPtools>"
+            "$<TARGET_BUNDLE_DIR:ProtoTools>"
         COMMENT "Ad-hoc signing with Bluetooth entitlements"
     )
 endif()

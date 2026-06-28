@@ -45,7 +45,7 @@ ui_*.h
 # Executables
 *.app
 *.exe
-!dist/KPtools.exe
+!dist/ProtoTools.exe
 
 # Generated
 *.autosave

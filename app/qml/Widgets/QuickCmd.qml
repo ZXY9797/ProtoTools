@@ -4,7 +4,7 @@ import QtQuick.Controls
 
 Rectangle {
     id: root
-    color: "#101419"
+    color: themeManager.isDark ? "#0C1017" : "#F8F9FB"
 
     property var onSend: function(cmd) {}
     property var onEdit: function(cmd) {}
@@ -12,18 +12,18 @@ Rectangle {
     property string editError: ""
     property var responseFrame: ({})
     property string responseStatusText: "发送快捷指令后显示当前回包"
-    property color surface: "#171D24"
-    property color surfaceRaised: "#1B222B"
-    property color surfaceSoft: "#202832"
-    property color outline: "#303B47"
-    property color outlineStrong: "#465A6F"
-    property color textPrimary: "#E7EDF4"
-    property color textSecondary: "#A4AFBC"
-    property color textMuted: "#778390"
-    property color accent: "#2F8DFF"
-    property color accentHover: "#3C9BFF"
-    property color success: "#5EE0C2"
-    property color danger: "#FF7F8D"
+    property color surface: themeManager.isDark ? "#131920" : "#FFFFFF"
+    property color surfaceRaised: themeManager.isDark ? "#1A222C" : "#F3F4F6"
+    property color surfaceSoft: themeManager.isDark ? "#0F141B" : "#F9FAFB"
+    property color outline: themeManager.isDark ? "#253040" : "#D1D5DB"
+    property color outlineStrong: themeManager.isDark ? "#384858" : "#9CA3AF"
+    property color textPrimary: themeManager.isDark ? "#E8EDF5" : "#111827"
+    property color textSecondary: themeManager.isDark ? "#9CAAB8" : "#6B7280"
+    property color textMuted: themeManager.isDark ? "#607080" : "#9CA3AF"
+    property color accent: themeManager.isDark ? "#3B8AFF" : "#2563EB"
+    property color accentHover: themeManager.isDark ? "#509AFF" : "#3B82F6"
+    property color success: themeManager.isDark ? "#34D399" : "#059669"
+    property color danger: themeManager.isDark ? "#F87171" : "#DC2626"
 
     function commandValue(cmd, key, fallback) {
         if (!cmd || cmd[key] === undefined || cmd[key] === null)
@@ -40,8 +40,8 @@ Rectangle {
         root.editingIndex = cardIndex
         root.editError = ""
         editNameField.text = commandValue(cmd, "name", "")
-        editSrcField.text = displayHexText(commandValue(cmd, "src", "0x0001"))
-        editDstField.text = displayHexText(commandValue(cmd, "dst", "0x0500"))
+        editSrcField.text = displayHexText(commandValue(cmd, "src", "0x10"))
+        editDstField.text = displayHexText(commandValue(cmd, "dst", "0x05"))
         editSeqField.text = commandValue(cmd, "seq", "0001")
         editSetField.text = displayHexText(commandValue(cmd, "cmdset", "0x00"))
         editIdField.text = displayHexText(commandValue(cmd, "cmdid", "0x00"))
@@ -81,7 +81,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 32
-            color: "#111820"
+            color: themeManager.isDark ? "#0F1620" : "#F3F4F6"
 
             RowLayout {
                 anchors.fill: parent
@@ -112,14 +112,14 @@ Rectangle {
                     implicitWidth: countText.implicitWidth + 16
                     implicitHeight: 20
                     radius: 7
-                    color: "#172235"
-                    border.color: "#2D4D6B"
+                    color: themeManager.isDark ? "#172235" : "#DBEAFE"
+                    border.color: themeManager.isDark ? "#2D4D6B" : "#93C5FD"
 
                     Text {
                         id: countText
                         anchors.centerIn: parent
                         text: quickCmdManager.count + " 条"
-                        color: "#BFD7F2"
+                        color: themeManager.isDark ? "#BFD7F2" : "#1D4ED8"
                         font.pixelSize: 10
                         font.weight: Font.Medium
                     }
@@ -153,7 +153,7 @@ Rectangle {
                 width: Math.max(0, quickList.width - 12)
                 implicitHeight: Math.max(64, cardContent.implicitHeight + 8)
                 radius: 6
-                color: cmdHover.hovered ? "#1C2733" : root.surfaceRaised
+                color: cmdHover.hovered ? (themeManager.isDark ? "#1C2733" : "#F3F4F6") : root.surfaceRaised
                 border.color: cmdHover.hovered ? root.outlineStrong : root.outline
                 border.width: 1
 
@@ -176,12 +176,12 @@ Rectangle {
                             Layout.preferredWidth: 18
                             Layout.preferredHeight: 18
                             radius: 5
-                            color: "#142131"
-                            border.color: "#2A4862"
+                            color: themeManager.isDark ? "#142131" : "#EFF6FF"
+                            border.color: themeManager.isDark ? "#2A4862" : "#BFDBFE"
                             Text {
                                 anchors.centerIn: parent
                                 text: (index + 1).toString()
-                                color: "#9EC6EF"
+                                color: themeManager.isDark ? "#9EC6EF" : "#2563EB"
                                 font.pixelSize: 8
                                 font.weight: Font.Medium
                             }
@@ -202,17 +202,17 @@ Rectangle {
 
                         ActionButton {
                             text: "发送"
-                            accentColor: "#24BFA5"
+                            accentColor: themeManager.isDark ? "#24BFA5" : "#059669"
                             onClicked: root.onSend(quickCmdManager.commands[index])
                         }
                         ActionButton {
                             text: "编辑"
-                            accentColor: "#D4A83B"
+                            accentColor: themeManager.isDark ? "#D4A83B" : "#D97706"
                             onClicked: root.openEditCommand(index, quickCmdManager.commands[index])
                         }
                         ActionButton {
                             text: "删除"
-                            accentColor: "#E05E70"
+                            accentColor: themeManager.isDark ? "#E05E70" : "#DC2626"
                             onClicked: quickCmdManager.removeCommand(index)
                         }
                     }
@@ -233,7 +233,7 @@ Rectangle {
                         implicitHeight: 21
                         radius: 5
                         color: root.surface
-                        border.color: "#27323E"
+                        border.color: root.outline
 
                         RowLayout {
                             anchors.fill: parent
@@ -355,7 +355,7 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
-                color: "#111820"
+                color: surface
                 radius: 8
 
                 Text {
@@ -439,7 +439,7 @@ Rectangle {
                             id: editDataField
                             selectByMouse: true
                             color: root.textPrimary
-                            selectedTextColor: "#08121B"
+                            selectedTextColor: "#FFFFFF"
                             selectionColor: root.accentHover
                             font.pixelSize: 11
                             font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
@@ -466,7 +466,7 @@ Rectangle {
                     EditCommandButton {
                         text: "取消"
                         normalColor: root.surfaceSoft
-                        hoverColor: "#243241"
+                        hoverColor: themeManager.isDark ? "#243241" : "#F3F4F6"
                         borderColor: root.outlineStrong
                         textColor: root.textSecondary
                         onClicked: editPopup.close()
@@ -492,7 +492,7 @@ Rectangle {
         implicitHeight: 18
         radius: 5
         color: root.surfaceSoft
-        border.color: "#314050"
+        border.color: root.outline
 
         RowLayout {
             id: pillLayout
@@ -565,7 +565,7 @@ Rectangle {
         implicitHeight: 28
         selectByMouse: true
         color: root.textPrimary
-        selectedTextColor: "#08121B"
+        selectedTextColor: "#FFFFFF"
         selectionColor: root.accentHover
         font.pixelSize: 11
         font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"

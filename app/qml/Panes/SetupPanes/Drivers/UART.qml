@@ -18,16 +18,16 @@ ColumnLayout {
     property int actionWidth: 32
     property var baudRates: ["9600", "19200", "38400", "57600", "115200", "256000", "460800", "921600", "1000000", "2000000"]
 
-    readonly property color surface: "#151C24"
-    readonly property color surfaceHover: "#1B2630"
-    readonly property color fieldBg: "#202832"
-    readonly property color outline: "#33404A"
-    readonly property color outlineActive: "#69AEEB"
-    readonly property color textPrimary: "#E2E8EF"
-    readonly property color textSecondary: "#AEB7C2"
-    readonly property color textMuted: "#667085"
-    readonly property color accent: "#2F8DFF"
-    readonly property color success: "#4EC9B0"
+    readonly property color surface: themeManager.isDark ? "#131920" : "#FFFFFF"
+    readonly property color surfaceHover: themeManager.isDark ? "#1A222C" : "#F3F4F6"
+    readonly property color fieldBg: themeManager.isDark ? "#0F141B" : "#F9FAFB"
+    readonly property color outline: themeManager.isDark ? "#253040" : "#D1D5DB"
+    readonly property color outlineActive: themeManager.isDark ? "#3B8AFF" : "#2563EB"
+    readonly property color textPrimary: themeManager.isDark ? "#E8EDF5" : "#111827"
+    readonly property color textSecondary: themeManager.isDark ? "#9CAAB8" : "#6B7280"
+    readonly property color textMuted: themeManager.isDark ? "#607080" : "#9CA3AF"
+    readonly property color accent: themeManager.isDark ? "#3B8AFF" : "#2563EB"
+    readonly property color success: themeManager.isDark ? "#34D399" : "#059669"
 
     function syncPortSelection(saveSetting) {
         var wanted = settingsManager.loadValue("setup.uart.portName", "")
@@ -141,7 +141,7 @@ ColumnLayout {
                 leftPadding: 9
                 rightPadding: 26
                 selectByMouse: true
-                selectedTextColor: "#08121B"
+                selectedTextColor: themeManager.isDark ? "#08121B" : "#FFFFFF"
                 selectionColor: root.outlineActive
                 validator: IntValidator { bottom: 300; top: 9216000 }
                 onTextEdited: {
@@ -272,7 +272,7 @@ ColumnLayout {
         }
         background: Rectangle {
             radius: 7
-            color: iconButton.down ? "#236EA9" : (iconButton.hovered ? root.surfaceHover : root.surface)
+            color: iconButton.down ? (themeManager.isDark ? "#236EA9" : "#1D4ED8") : (iconButton.hovered ? root.surfaceHover : root.surface)
             border.color: iconButton.activeFocus ? root.outlineActive : root.outline
         }
         ToolTip.visible: hovered && tooltip.length > 0
@@ -287,8 +287,8 @@ ColumnLayout {
         focusPolicy: Qt.TabFocus
         background: Rectangle {
             radius: 5
-            color: miniCombo.hovered ? "#26303A" : "#1B222A"
-            border.color: miniCombo.activeFocus ? root.outlineActive : "#3B4651"
+            color: miniCombo.hovered ? (themeManager.isDark ? "#26303A" : "#E5E7EB") : root.fieldBg
+            border.color: miniCombo.activeFocus ? root.outlineActive : root.outline
         }
         contentItem: Text {
             text: miniCombo.currentText
@@ -307,8 +307,8 @@ ColumnLayout {
         Layout.fillWidth: true
         implicitHeight: 28
         radius: 7
-        color: connected ? "#102E29" : "#151C24"
-        border.color: connected ? "#2D7F6D" : root.outline
+        color: connected ? (themeManager.isDark ? "#102E29" : "#ECFDF5") : root.surface
+        border.color: connected ? root.success : root.outline
 
         RowLayout {
             anchors.fill: parent
@@ -327,7 +327,7 @@ ColumnLayout {
             Text {
                 id: statusText
                 Layout.fillWidth: true
-                color: parent.parent.connected ? "#9FF2DD" : root.textMuted
+                color: parent.parent.connected ? (themeManager.isDark ? "#9FF2DD" : "#059669") : root.textMuted
                 font.pixelSize: 10
                 verticalAlignment: Text.AlignVCenter
                 elide: Text.ElideRight

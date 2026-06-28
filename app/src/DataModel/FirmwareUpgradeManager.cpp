@@ -18,13 +18,22 @@
 namespace {
 
 constexpr quint8 SOP = 0xAA;
-constexpr quint8 VERSION = 0x01;
-constexpr int HEADER_SIZE = 10;
+constexpr int HEADER_SIZE = 11;
 constexpr int CRC16_SIZE = 2;
-constexpr quint8 NEXT_HEADER_GENERIC = 0x01;
-constexpr int GENERIC_HEADER_SIZE = 6;
-constexpr quint16 FLAG_RESPONSE = 1u << 0;
-constexpr quint16 FLAG_ACK_REQUIRED = 1u << 1;
+
+constexpr quint8 CMD_TYPE_IS_ACK_MASK     = 0x01;
+constexpr quint8 CMD_TYPE_ACK_MODE_MASK   = 0x03;
+constexpr quint8 CMD_TYPE_ENC_MODE_MASK   = 0x03;
+constexpr quint8 CMD_TYPE_PRIORITY_MASK   = 0x01;
+constexpr quint8 CMD_TYPE_RETRANSMIT_MASK = 0x01;
+
+constexpr int CMD_TYPE_ACK_MODE_SHIFT   = 1;
+constexpr int CMD_TYPE_ENC_MODE_SHIFT   = 3;
+constexpr int CMD_TYPE_PRIORITY_SHIFT   = 5;
+constexpr int CMD_TYPE_RETRANSMIT_SHIFT = 6;
+
+constexpr quint8 ACK_MODE_NO = 0;
+constexpr quint8 ACK_MODE_FINISH = 2;
 
 constexpr quint16 CMD_PING = 0x0000;
 constexpr quint16 CMD_GET_DEVICE_INFO = 0x0001;
@@ -1299,24 +1308,47 @@ void FirmwareUpgradeManager::completeUpgrade()
     finishSuccessfulUpgrade();
 }
 
+namespace {
+void appendLe16(QByteArray &data, quint16 value)
+{
+    data.append(static_cast<char>(value & 0xFF));
+    data.append(static_cast<char>((value >> 8) & 0xFF));
+}
+} // namespace
+
 QByteArray FirmwareUpgradeManager::buildFrame(quint16 cmd, quint16 seq, const QByteArray &data) const
 {
-    QByteArray payload;
-    payload.append(le16(seq));
-    payload.append(le16(cmd));
-    payload.append(le16(FLAG_ACK_REQUIRED));
-    payload.append(data);
+    const quint8 cmdset = static_cast<quint8>((cmd >> 8) & 0xFF);
+    const quint8 cmdid = static_cast<quint8>(cmd & 0xFF);
+    const quint8 cmdType = (ACK_MODE_FINISH << CMD_TYPE_ACK_MODE_SHIFT);
+    const quint8 sender = static_cast<quint8>(m_srcAddr & 0xFF);
+    const quint8 receiver = static_cast<quint8>(m_dstAddr & 0xFF);
+
+    const quint16 totalLen = HEADER_SIZE + data.size() + CRC16_SIZE;
 
     QByteArray frame;
     frame.append(static_cast<char>(SOP));
-    frame.append(static_cast<char>(VERSION));
-    frame.append(le16(static_cast<quint16>(m_srcAddr)));
-    frame.append(le16(static_cast<quint16>(m_dstAddr)));
-    frame.append(le16(static_cast<quint16>(payload.size())));
-    frame.append(static_cast<char>(NEXT_HEADER_GENERIC));
-    frame.append(static_cast<char>(crc8(frame)));
-    frame.append(payload);
-    frame.append(le16(crc16(payload)));
+
+    const quint16 verLen = (1u << 10) | (totalLen & 0x3FF);
+    frame.append(static_cast<char>(verLen & 0xFF));
+    frame.append(static_cast<char>((verLen >> 8) & 0xFF));
+
+    frame.append(static_cast<char>(bcc(frame)));
+
+    frame.append(static_cast<char>(cmdType));
+    frame.append(static_cast<char>(sender));
+    frame.append(static_cast<char>(receiver));
+
+    frame.append(static_cast<char>(seq & 0xFF));
+    frame.append(static_cast<char>((seq >> 8) & 0xFF));
+
+    frame.append(static_cast<char>(cmdset));
+    frame.append(static_cast<char>(cmdid));
+
+    frame.append(data);
+
+    appendLe16(frame, crc16(frame));
+
     return frame;
 }
 
@@ -1367,16 +1399,12 @@ quint32 FirmwareUpgradeManager::u32(const QByteArray &data, int offset)
          | (static_cast<quint32>(static_cast<quint8>(data[offset + 3])) << 24);
 }
 
-quint8 FirmwareUpgradeManager::crc8(const QByteArray &data)
+quint8 FirmwareUpgradeManager::bcc(const QByteArray &data)
 {
-    quint8 crc = 0;
-    for (char ch : data) {
-        crc ^= static_cast<quint8>(ch);
-        for (int i = 0; i < 8; ++i)
-            crc = (crc & 1) ? static_cast<quint8>((crc >> 1) ^ 0x8C)
-                            : static_cast<quint8>(crc >> 1);
-    }
-    return crc;
+    quint8 sum = 0;
+    for (char ch : data)
+        sum ^= static_cast<quint8>(ch);
+    return sum;
 }
 
 quint16 FirmwareUpgradeManager::crc16(const QByteArray &data)

@@ -19,8 +19,8 @@ Window {
             root.height = root.minimumHeight
     }
     visible: true
-    title: "KPtools"
-    color: "#151719"
+    title: "ProtoTools"
+    color: themeManager.isDark ? "#0C1017" : "#F8F9FB"
 
     property string screenshotPath: ""
     property bool screenshotMode: false
@@ -126,35 +126,35 @@ Window {
 
     function injectDemoData() {
         var demoFrames = [
-            { ts: "17:18:00.000", dir: "↓", sender: "0x0500", receiver: "0x0101", len: "24", type: "ACK", seq: "0100", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 80 3F 00 00 00 40", crc: "0x1000" },
-            { ts: "17:18:00.010", dir: "↓", sender: "0x0500", receiver: "0x0101", len: "24", type: "ACK", seq: "0101", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 C0 3F 00 00 20 40", crc: "0x1001" },
-            { ts: "17:18:00.020", dir: "↓", sender: "0x0500", receiver: "0x0101", len: "24", type: "ACK", seq: "0102", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 00 40 00 00 40 40", crc: "0x1002" },
-            { ts: "17:18:00.030", dir: "↓", sender: "0x0500", receiver: "0x0101", len: "24", type: "ACK", seq: "0103", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 20 40 00 00 60 40", crc: "0x1003" },
-            { ts: "17:18:00.040", dir: "↓", sender: "0x0500", receiver: "0x0101", len: "24", type: "ACK", seq: "0104", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 40 40 00 00 80 40", crc: "0x1004" },
-            { ts: "17:18:00.050", dir: "↓", sender: "0x0500", receiver: "0x0101", len: "24", type: "ACK", seq: "0105", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 60 40 00 00 90 40", crc: "0x1005" },
-            { ts: "17:18:01", dir: "↑", sender: "0x0001", receiver: "0x0002", len: "18", type: "REQ", seq: "0001", cmdSet: "0x01", cmdId: "0x01", data: "00", crc: "0xA3F1" },
-            { ts: "17:18:01", dir: "↓", sender: "0x0002", receiver: "0x0001", len: "22", type: "ACK", seq: "0001", cmdSet: "0x01", cmdId: "0x01", data: "01 02 03 04 56 31 2E 30", crc: "0xB7C2" },
-            { ts: "17:18:03", dir: "↑", sender: "0x0001", receiver: "0x0002", len: "18", type: "REQ", seq: "0002", cmdSet: "0x02", cmdId: "0xB1", data: "", crc: "0x8D4E" },
-            { ts: "17:18:03", dir: "↓", sender: "0x0002", receiver: "0x0001", len: "24", type: "ACK", seq: "0002", cmdSet: "0x02", cmdId: "0xB1", data: "41 CC 80 00 41 D3 33 33", crc: "0xE19A" },
-            { ts: "17:18:05", dir: "↑", sender: "0x0001", receiver: "0x0002", len: "20", type: "REQ", seq: "0003", cmdSet: "0x02", cmdId: "0xB2", data: "01 02", crc: "0x2F6B" },
-            { ts: "17:18:05", dir: "↓", sender: "0x0002", receiver: "0x0001", len: "24", type: "ACK", seq: "0003", cmdSet: "0x02", cmdId: "0xB2", data: "42 48 00 00 42 70 00 00", crc: "0x9C3D" },
-            { ts: "17:18:07", dir: "↑", sender: "0x0001", receiver: "0x0002", len: "18", type: "REQ", seq: "0004", cmdSet: "0x01", cmdId: "0x10", data: "FF", crc: "0x1A8C" },
-            { ts: "17:18:08", dir: "↓", sender: "0x0002", receiver: "0x0001", len: "19", type: "ACK", seq: "0004", cmdSet: "0x01", cmdId: "0x10", data: "00", crc: "0xD4E7" },
-            { ts: "17:18:10", dir: "↑", sender: "0x0001", receiver: "0x0002", len: "18", type: "REQ", seq: "0005", cmdSet: "0x02", cmdId: "0xB1", data: "", crc: "0x8D4E" },
-            { ts: "17:18:10", dir: "↓", sender: "0x0002", receiver: "0x0001", len: "24", type: "ACK", seq: "0005", cmdSet: "0x02", cmdId: "0xB1", data: "41 D0 00 00 41 D9 99 9A", crc: "0x5B2F" },
-            { ts: "17:18:12", dir: "↑", sender: "0x0001", receiver: "0x0002", len: "25", type: "REQ", seq: "0006", cmdSet: "0x03", cmdId: "0xA0", data: "DE AD BE EF 01 02 03", crc: "0x7A1C" },
-            { ts: "17:18:12", dir: "↓", sender: "0x0002", receiver: "0x0001", len: "19", type: "ACK", seq: "0006", cmdSet: "0x03", cmdId: "0xA0", data: "01", crc: "0x3E8D" },
+            { ts: "17:18:00.000", dir: "↓", sender: "0x05", receiver: "0x10", len: "24", type: "ACK", seq: "0100", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 80 3F 00 00 00 40", crc: "0x1000" },
+            { ts: "17:18:00.010", dir: "↓", sender: "0x05", receiver: "0x10", len: "24", type: "ACK", seq: "0101", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 C0 3F 00 00 20 40", crc: "0x1001" },
+            { ts: "17:18:00.020", dir: "↓", sender: "0x05", receiver: "0x10", len: "24", type: "ACK", seq: "0102", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 00 40 00 00 40 40", crc: "0x1002" },
+            { ts: "17:18:00.030", dir: "↓", sender: "0x05", receiver: "0x10", len: "24", type: "ACK", seq: "0103", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 20 40 00 00 60 40", crc: "0x1003" },
+            { ts: "17:18:00.040", dir: "↓", sender: "0x05", receiver: "0x10", len: "24", type: "ACK", seq: "0104", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 40 40 00 00 80 40", crc: "0x1004" },
+            { ts: "17:18:00.050", dir: "↓", sender: "0x05", receiver: "0x10", len: "24", type: "ACK", seq: "0105", cmdSet: "0x05", cmdId: "0x02", cmd: "0x0502", data: "00 00 60 40 00 00 90 40", crc: "0x1005" },
+            { ts: "17:18:01", dir: "↑", sender: "0x10", receiver: "0x05", len: "18", type: "REQ", seq: "0001", cmdSet: "0x01", cmdId: "0x01", data: "00", crc: "0xA3F1" },
+            { ts: "17:18:01", dir: "↓", sender: "0x05", receiver: "0x10", len: "22", type: "ACK", seq: "0001", cmdSet: "0x01", cmdId: "0x01", data: "01 02 03 04 56 31 2E 30", crc: "0xB7C2" },
+            { ts: "17:18:03", dir: "↑", sender: "0x10", receiver: "0x05", len: "18", type: "REQ", seq: "0002", cmdSet: "0x02", cmdId: "0xB1", data: "", crc: "0x8D4E" },
+            { ts: "17:18:03", dir: "↓", sender: "0x05", receiver: "0x10", len: "24", type: "ACK", seq: "0002", cmdSet: "0x02", cmdId: "0xB1", data: "41 CC 80 00 41 D3 33 33", crc: "0xE19A" },
+            { ts: "17:18:05", dir: "↑", sender: "0x10", receiver: "0x05", len: "20", type: "REQ", seq: "0003", cmdSet: "0x02", cmdId: "0xB2", data: "01 02", crc: "0x2F6B" },
+            { ts: "17:18:05", dir: "↓", sender: "0x05", receiver: "0x10", len: "24", type: "ACK", seq: "0003", cmdSet: "0x02", cmdId: "0xB2", data: "42 48 00 00 42 70 00 00", crc: "0x9C3D" },
+            { ts: "17:18:07", dir: "↑", sender: "0x10", receiver: "0x05", len: "18", type: "REQ", seq: "0004", cmdSet: "0x01", cmdId: "0x10", data: "FF", crc: "0x1A8C" },
+            { ts: "17:18:08", dir: "↓", sender: "0x05", receiver: "0x10", len: "19", type: "ACK", seq: "0004", cmdSet: "0x01", cmdId: "0x10", data: "00", crc: "0xD4E7" },
+            { ts: "17:18:10", dir: "↑", sender: "0x10", receiver: "0x05", len: "18", type: "REQ", seq: "0005", cmdSet: "0x02", cmdId: "0xB1", data: "", crc: "0x8D4E" },
+            { ts: "17:18:10", dir: "↓", sender: "0x05", receiver: "0x10", len: "24", type: "ACK", seq: "0005", cmdSet: "0x02", cmdId: "0xB1", data: "41 D0 00 00 41 D9 99 9A", crc: "0x5B2F" },
+            { ts: "17:18:12", dir: "↑", sender: "0x10", receiver: "0x05", len: "25", type: "REQ", seq: "0006", cmdSet: "0x03", cmdId: "0xA0", data: "DE AD BE EF 01 02 03", crc: "0x7A1C" },
+            { ts: "17:18:12", dir: "↓", sender: "0x05", receiver: "0x10", len: "19", type: "ACK", seq: "0006", cmdSet: "0x03", cmdId: "0xA0", data: "01", crc: "0x3E8D" },
         ]
         for (var i = 0; i < demoFrames.length; i++) {
             var f = demoFrames[i]
-            var crc8 = f.crc8 || ("0x" + ("0" + ((0x50 + i) & 0xFF).toString(16).toUpperCase()).slice(-2))
+            var headCrc = f.headCrc || ("0x" + ("0" + ((0x50 + i) & 0xFF).toString(16).toUpperCase()).slice(-2))
             monitorModel.addFrame({
                 timestamp: f.ts, direction: f.dir,
                 sender: f.sender, receiver: f.receiver,
                 len: f.len, type: f.type, seq: f.seq,
                 cmd: f.cmd || "",
                 cmdSet: f.cmdSet, cmdId: f.cmdId,
-                data: f.data, crc8: crc8, crc: f.crc, crc16: f.crc
+                data: f.data, headCrc: headCrc, crc: f.crc, crc16: f.crc
             })
         }
         linkManager.rxBytes = 284

@@ -33,7 +33,7 @@ private:
 
     ParseResult tryParseFrame(int pos);
 
-    static quint8 crc8(const QByteArray &data);
+    static quint8 bcc(const QByteArray &data);
     static quint16 crc16(const QByteArray &data);
 
     QByteArray m_buffer;
@@ -42,14 +42,13 @@ private:
     int m_framesExtracted = 0;
     int m_bytesProcessed = 0;
 
-    static constexpr quint8 SOP = 0xAA;
-    static constexpr quint8 PROTO_VER = 0x01;
-    static constexpr int HEADER_SIZE = 10;
+    static constexpr quint8 SOF = 0xAA;
+    static constexpr int HEADER_SIZE = 11;
     static constexpr int CRC16_SIZE = 2;
-    static constexpr quint8 NEXT_HEADER_GENERIC = 0x01;
-    static constexpr int GENERIC_HEADER_SIZE = 6;
-    static constexpr quint16 FLAG_RESPONSE = 1u << 0;
-    static constexpr int MIN_FRAME_SIZE = HEADER_SIZE + GENERIC_HEADER_SIZE + CRC16_SIZE;
+    static constexpr int MIN_FRAME_SIZE = HEADER_SIZE + CRC16_SIZE;
+
+    static constexpr quint16 VER_LEN_LEN_MASK  = 0x3FF;
+    static constexpr quint8 CMD_TYPE_IS_ACK_MASK = 0x01;
 };
 
 #endif // FRAMEPROCESSOR_H

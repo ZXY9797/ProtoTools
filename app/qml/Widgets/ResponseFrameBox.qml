@@ -8,17 +8,17 @@ Rectangle {
     property string title: "完整回包"
     property string placeholderText: "发送后显示回包"
     property var frame: ({})
-    property color surface: "#171D24"
-    property color surfaceRaised: "#1B222B"
-    property color surfaceSoft: "#202832"
-    property color outline: "#303B47"
-    property color outlineStrong: "#465A6F"
-    property color textPrimary: "#E7EDF4"
-    property color textSecondary: "#A4AFBC"
-    property color textMuted: "#778390"
-    property color accentColor: "#2F8DFF"
-    property color successColor: "#5EE0C2"
-    property color dangerColor: "#FF7F8D"
+    property color surface: "#131920"
+    property color surfaceRaised: "#1A222C"
+    property color surfaceSoft: "#0F141B"
+    property color outline: "#253040"
+    property color outlineStrong: "#384858"
+    property color textPrimary: "#E8EDF5"
+    property color textSecondary: "#9CAAB8"
+    property color textMuted: "#607080"
+    property color accentColor: "#3B8AFF"
+    property color successColor: "#34D399"
+    property color dangerColor: "#F87171"
     property bool binaryMode: false
     readonly property bool hasFrame: frameValue("rawHex", "").length > 0
 

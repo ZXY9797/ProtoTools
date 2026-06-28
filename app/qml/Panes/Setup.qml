@@ -4,13 +4,25 @@ import QtQuick.Controls
 
 Rectangle {
     id: root
-    color: "#15191E"
+    color: themeManager.isDark ? "#0C1017" : "#F8F9FB"
 
     property bool _restoring: true
     property var linkTypes: ["UART", "USB", "CAN", "BLE"]
     property string selectedLinkType: normalizeType(linkManager.linkType || "UART")
     readonly property bool pendingLinkSwitch: linkManager.connected && normalizeType(linkManager.linkType) !== selectedLinkType
     property real contentHeight: _titleBar.height + _contentCol.implicitHeight + _statusRow.implicitHeight + _connBtn.implicitHeight + 26
+
+    // 主题颜色别名
+    readonly property color surface: themeManager.isDark ? "#131920" : "#FFFFFF"
+    readonly property color surfaceRaised: themeManager.isDark ? "#1A222C" : "#F3F4F6"
+    readonly property color outline: themeManager.isDark ? "#253040" : "#D1D5DB"
+    readonly property color outlineStrong: themeManager.isDark ? "#384858" : "#9CA3AF"
+    readonly property color textPrimary: themeManager.isDark ? "#E8EDF5" : "#111827"
+    readonly property color textSecondary: themeManager.isDark ? "#9CAAB8" : "#6B7280"
+    readonly property color textMuted: themeManager.isDark ? "#607080" : "#9CA3AF"
+    readonly property color accent: themeManager.isDark ? "#3B8AFF" : "#2563EB"
+    readonly property color success: themeManager.isDark ? "#34D399" : "#059669"
+    readonly property color warning: themeManager.isDark ? "#FBBF24" : "#D97706"
 
     function normalizeType(type) {
         if (type === "\u4e32\u53e3")
@@ -64,7 +76,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
         height: 34
-        color: "#1C2229"
+        color: root.surface
 
         RowLayout {
             anchors.fill: parent
@@ -74,7 +86,7 @@ Rectangle {
 
             Text {
                 text: "\u94fe\u8def\u914d\u7f6e"
-                color: "#F0F4F8"
+                color: root.textPrimary
                 font.pixelSize: 13
                 font.weight: Font.Medium
                 Layout.alignment: Qt.AlignVCenter
@@ -87,8 +99,8 @@ Rectangle {
                 implicitWidth: statusText.implicitWidth + 18
                 implicitHeight: 20
                 radius: 10
-                color: linkManager.connected ? "#153E35" : "#262D35"
-                border.color: linkManager.connected ? "#2FB389" : "#3B4652"
+                color: linkManager.connected ? (themeManager.isDark ? "#0D2D24" : "#ECFDF5") : root.surfaceRaised
+                border.color: linkManager.connected ? root.success : root.outline
 
                 RowLayout {
                     anchors.centerIn: parent
@@ -97,12 +109,12 @@ Rectangle {
                         width: 6
                         height: 6
                         radius: 3
-                        color: linkManager.connected ? "#3DDC97" : "#7D8793"
+                        color: linkManager.connected ? root.success : root.textMuted
                     }
                     Text {
                         id: statusText
                         text: linkManager.connected ? "\u5df2\u8fde\u63a5" : "\u672a\u8fde\u63a5"
-                        color: linkManager.connected ? "#CFF8E8" : "#B8C1CC"
+                        color: linkManager.connected ? (themeManager.isDark ? "#A7F3D0" : "#059669") : root.textSecondary
                         font.pixelSize: 10
                     }
                 }
@@ -114,7 +126,7 @@ Rectangle {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             height: 1
-            color: "#2D3742"
+            color: root.outline
         }
     }
 
@@ -148,7 +160,7 @@ Rectangle {
         }
         contentItem: Text {
             text: _connBtn.text
-            color: _connBtn.enabled ? "#FFFFFF" : "#7E8894"
+            color: _connBtn.enabled ? "#FFFFFF" : root.textMuted
             font: _connBtn.font
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -156,13 +168,13 @@ Rectangle {
         background: Rectangle {
             radius: 8
             color: root.pendingLinkSwitch
-                   ? (_connBtn.down ? "#8A650E" : (_connBtn.hovered ? "#C18B1A" : "#A97712"))
+                   ? (_connBtn.down ? (themeManager.isDark ? "#78350F" : "#B45309") : (_connBtn.hovered ? (themeManager.isDark ? "#B45309" : "#D97706") : (themeManager.isDark ? "#92400E" : "#F59E0B")))
                    : (!linkManager.connected
-                      ? (_connBtn.down ? "#16694F" : (_connBtn.hovered ? "#21A67B" : "#1C8C69"))
-                      : (_connBtn.down ? "#29323C" : (_connBtn.hovered ? "#36424E" : "#2C3540")))
+                      ? (_connBtn.down ? (themeManager.isDark ? "#065F46" : "#047857") : (_connBtn.hovered ? (themeManager.isDark ? "#059669" : "#10B981") : (themeManager.isDark ? "#047857" : "#059669")))
+                      : (_connBtn.down ? root.surfaceRaised : (_connBtn.hovered ? (themeManager.isDark ? "#253040" : "#E5E7EB") : root.surface)))
             border.width: 1
-            border.color: _connBtn.activeFocus ? "#7AB7FF"
-                         : (root.pendingLinkSwitch ? "#E0B44A" : (!linkManager.connected ? "#3AD6A1" : "#465360"))
+            border.color: _connBtn.activeFocus ? accent
+                         : (root.pendingLinkSwitch ? warning : (!linkManager.connected ? success : outline))
         }
     }
 
@@ -193,7 +205,7 @@ Rectangle {
 
                     Text {
                         text: "\u94fe\u8def\u7c7b\u578b"
-                        color: "#AEB7C2"
+                        color: root.textSecondary
                         font.pixelSize: 11
                         Layout.alignment: Qt.AlignVCenter
                     }
@@ -202,7 +214,7 @@ Rectangle {
 
                     Text {
                         text: root.selectedLinkType
-                        color: "#7AB7FF"
+                        color: accent
                         font.pixelSize: 11
                         font.family: "Menlo"
                         Layout.alignment: Qt.AlignVCenter
@@ -236,7 +248,7 @@ Rectangle {
                             }
                             contentItem: Text {
                                 text: linkTypeButton.text
-                                color: linkTypeButton.active ? "#FFFFFF" : "#B8C1CC"
+                                color: linkTypeButton.active ? "#FFFFFF" : root.textSecondary
                                 font.pixelSize: 12
                                 font.weight: linkTypeButton.active ? Font.DemiBold : Font.Normal
                                 horizontalAlignment: Text.AlignHCenter
@@ -246,12 +258,12 @@ Rectangle {
                             background: Rectangle {
                                 radius: 8
                                 color: linkTypeButton.active
-                                       ? (linkTypeButton.down ? "#1F5E91" : "#236EA9")
-                                       : (linkTypeButton.hovered ? "#252D36" : "#1B222A")
+                                       ? (linkTypeButton.down ? (themeManager.isDark ? "#1E5A94" : "#1D4ED8") : accent)
+                                       : (linkTypeButton.hovered ? root.surfaceRaised : root.surface)
                                 border.width: 1
                                 border.color: linkTypeButton.active
-                                              ? "#62B5F8"
-                                              : (linkTypeButton.activeFocus ? "#7AB7FF" : "#33404A")
+                                              ? (themeManager.isDark ? "#60A5FA" : "#93C5FD")
+                                              : (linkTypeButton.activeFocus ? accent : outline)
                             }
                         }
                     }
@@ -261,7 +273,7 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: "#29313A"
+                color: root.outline
             }
 
             Loader {

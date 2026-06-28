@@ -10,18 +10,18 @@ Item {
     property bool _restoring: true
 
     readonly property var c: themeManager.colors
-    readonly property color pageBg: "#0F141B"
-    readonly property color surface: "#151B23"
-    readonly property color surfaceRaised: "#1A222C"
-    readonly property color surfaceSoft: "#10161D"
-    readonly property color outline: "#293544"
-    readonly property color outlineStrong: "#3B4A5C"
-    readonly property color textPrimary: "#E7EDF5"
-    readonly property color textSecondary: "#AAB6C4"
-    readonly property color textMuted: "#6F7D8C"
-    readonly property color accent: "#2F81F7"
-    readonly property color success: "#2DBA7F"
-    readonly property color danger: "#E25D5D"
+    readonly property color pageBg: themeManager.isDark ? "#0C1017" : "#F8F9FB"
+    readonly property color surface: themeManager.isDark ? "#131920" : "#FFFFFF"
+    readonly property color surfaceRaised: themeManager.isDark ? "#1A222C" : "#F3F4F6"
+    readonly property color surfaceSoft: themeManager.isDark ? "#0F141B" : "#F9FAFB"
+    readonly property color outline: themeManager.isDark ? "#253040" : "#D1D5DB"
+    readonly property color outlineStrong: themeManager.isDark ? "#384858" : "#9CA3AF"
+    readonly property color textPrimary: themeManager.isDark ? "#E8EDF5" : "#111827"
+    readonly property color textSecondary: themeManager.isDark ? "#9CAAB8" : "#6B7280"
+    readonly property color textMuted: themeManager.isDark ? "#607080" : "#9CA3AF"
+    readonly property color accent: themeManager.isDark ? "#3B8AFF" : "#2563EB"
+    readonly property color success: themeManager.isDark ? "#34D399" : "#059669"
+    readonly property color danger: themeManager.isDark ? "#F87171" : "#DC2626"
 
     Palette {
         id: darkPalette
@@ -33,6 +33,7 @@ Item {
         highlightedText: "#FFFFFF"
         window: surface
         windowText: textPrimary
+        placeholderText: textMuted
     }
 
     Component.onCompleted: {
@@ -66,7 +67,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             radius: 7
-            color: "#0D131A"
+            color: themeManager.isDark ? "#0D131A" : "#F3F4F6"
             border.color: outline
             clip: true
 
@@ -91,7 +92,7 @@ Item {
                 width: Math.min(parent.width - 40, hintText.implicitWidth + 34)
                 height: hintText.implicitHeight + 18
                 radius: 7
-                color: "#18202B"
+                color: themeManager.isDark ? "#18202B" : "#FFFFFF"
                 border.color: outlineStrong
                 visible: linkManager && !linkManager.connected
                 Text {
@@ -135,12 +136,17 @@ Item {
                         placeholderTextColor: textMuted
                         enabled: linkManager && linkManager.connected
                         selectByMouse: true
-                        palette: darkPalette
 
                         background: Rectangle {
                             radius: 6
                             color: surfaceSoft
                             border.color: sendField.activeFocus ? accent : outline
+                        }
+
+                        cursorDelegate: Rectangle {
+                            width: 1
+                            height: sendField.font.pixelSize
+                            color: accent
                         }
 
                         Keys.onReturnPressed: terminal.send(sendField.text)
@@ -387,10 +393,10 @@ Item {
         focusPolicy: Qt.TabFocus
         background: Rectangle {
             radius: 6
-            color: !control.enabled ? "#1B222B"
-                                    : (control.primary ? (control.hovered ? Qt.lighter(control.tone, 1.08) : control.tone)
-                                                       : (control.hovered ? "#202B37" : "#161D26"))
-            border.color: !control.enabled ? "#2B3441"
+            color: !control.enabled ? (themeManager.isDark ? "#1B222B" : "#F3F4F6")
+                   : (control.primary && control.enabled ? accent
+                      : (control.hovered ? (themeManager.isDark ? "#202B37" : "#F3F4F6") : (themeManager.isDark ? "#161D26" : "#F9FAFB")))
+            border.color: !control.enabled ? (themeManager.isDark ? "#2B3441" : "#E5E7EB")
                                            : (control.primary ? Qt.lighter(control.tone, 1.15)
                                                               : (control.activeFocus ? root.accent : root.outline))
         }
@@ -420,7 +426,7 @@ Item {
             y: parent.height / 2 - height / 2
             radius: 4
             color: check.checked ? accent : surfaceSoft
-            border.color: check.activeFocus ? "#FFFFFF" : (check.checked ? accent : outlineStrong)
+            border.color: check.activeFocus ? (themeManager.isDark ? "#FFFFFF" : "#111827") : (check.checked ? accent : outlineStrong)
             Text {
                 anchors.centerIn: parent
                 text: check.checked ? "✓" : ""

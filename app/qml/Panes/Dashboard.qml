@@ -4,7 +4,7 @@ import QtQuick.Controls
 
 Rectangle {
     id: root
-    color: pageBg
+    color: themeManager.isDark ? "#0C1017" : "#F8F9FB"
 
     property int monitorTabIndex: 0
     readonly property bool terminalActive: monitorTabIndex === 1
@@ -12,19 +12,20 @@ Rectangle {
     readonly property bool luaScriptPanelAvailable: monitorTabIndex === 0 || monitorTabIndex === 2
     readonly property bool luaScriptPanelVisible: luaScriptPanelAvailable && luaScriptPanelOpen
 
-    readonly property color pageBg: "#0F141B"
-    readonly property color surface: "#151B23"
-    readonly property color surfaceRaised: "#1A222C"
-    readonly property color surfaceSoft: "#10161D"
-    readonly property color outline: "#293544"
-    readonly property color outlineStrong: "#3B4A5C"
-    readonly property color textPrimary: "#E7EDF5"
-    readonly property color textSecondary: "#AAB6C4"
-    readonly property color textMuted: "#6F7D8C"
-    readonly property color accent: "#2F81F7"
-    readonly property color success: "#2DBA7F"
-    readonly property color warning: "#E3A13B"
-    readonly property color danger: "#E25D5D"
+    // 主题颜色别名
+    readonly property color pageBg: themeManager.isDark ? "#0C1017" : "#F8F9FB"
+    readonly property color surface: themeManager.isDark ? "#131920" : "#FFFFFF"
+    readonly property color surfaceRaised: themeManager.isDark ? "#1A222C" : "#F3F4F6"
+    readonly property color surfaceSoft: themeManager.isDark ? "#0F141B" : "#F9FAFB"
+    readonly property color outline: themeManager.isDark ? "#253040" : "#D1D5DB"
+    readonly property color outlineStrong: themeManager.isDark ? "#384858" : "#9CA3AF"
+    readonly property color textPrimary: themeManager.isDark ? "#E8EDF5" : "#111827"
+    readonly property color textSecondary: themeManager.isDark ? "#9CAAB8" : "#6B7280"
+    readonly property color textMuted: themeManager.isDark ? "#607080" : "#9CA3AF"
+    readonly property color accent: themeManager.isDark ? "#3B8AFF" : "#2563EB"
+    readonly property color success: themeManager.isDark ? "#34D399" : "#059669"
+    readonly property color warning: themeManager.isDark ? "#FBBF24" : "#D97706"
+    readonly property color danger: themeManager.isDark ? "#F87171" : "#DC2626"
     readonly property int rowNumberColumnWidth: 48
     readonly property int seqColumnWidth: 46
     readonly property int fixedTableWidth: 554
@@ -127,7 +128,7 @@ Rectangle {
                     selectByMouse: true
                     wrapMode: TextEdit.WrapAnywhere
                     color: root.textPrimary
-                    selectedTextColor: "#08121B"
+                    selectedTextColor: themeManager.isDark ? "#08121B" : "#FFFFFF"
                     selectionColor: root.accent
                     font.pixelSize: 12
                     font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
@@ -224,7 +225,7 @@ Rectangle {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 110
                         Layout.preferredHeight: 28
-                        placeholderText: "示例: Src:0x0101 && Len:24 || Data:*AA*"
+                        placeholderText: "示例: Src:0x10 && Len:24 || Data:*AA*"
                         placeholderTextColor: textMuted
                         color: textPrimary
                         selectionColor: accent
@@ -272,7 +273,7 @@ Rectangle {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 28
-                            color: "#111821"
+                            color: themeManager.isDark ? "#0F1620" : "#F3F4F6"
                             border.color: outline
 
                             Row {
@@ -324,7 +325,7 @@ Rectangle {
                                 contentItem: Rectangle {
                                     implicitWidth: vScrollBar.hovered ? 8 : 5
                                     radius: 4
-                                    color: parent.pressed ? accent : (vScrollBar.hovered ? outlineStrong : "#465362")
+                                    color: parent.pressed ? accent : (vScrollBar.hovered ? outlineStrong : (themeManager.isDark ? "#384858" : "#CBD5E1"))
                                 }
                                 background: Rectangle { implicitWidth: 10; color: "transparent" }
                             }
@@ -355,13 +356,13 @@ Rectangle {
                                         width: 32
                                         color: monitorTextColor(customTextColor, (model.direction === "→" || model.direction === "TX") ? warning : success)
                                     }
-                                    TableCell { text: displayHexText(model.sender || ""); width: 54; color: monitorTextColor(customTextColor, "#8CC8FF") }
-                                    TableCell { text: displayHexText(model.receiver || ""); width: 54; color: monitorTextColor(customTextColor, "#8CC8FF") }
-                                    TableCell { text: model.len || ""; width: 28; color: monitorTextColor(customTextColor, "#A7D38C") }
-                                    TableCell { text: model.type || ""; width: 40; color: monitorTextColor(customTextColor, "#E8CC73") }
-                                    TableCell { text: model.seq || ""; width: seqColumnWidth; color: monitorTextColor(customTextColor, "#7DB5FF") }
-                                    TableCell { text: displayHexText(model.cmdSet || ""); width: 56; color: monitorTextColor(customTextColor, "#D6A4E8") }
-                                    TableCell { text: displayHexText(model.cmdId || ""); width: 52; color: monitorTextColor(customTextColor, "#E8CC73") }
+                                    TableCell { text: displayHexText(model.sender || ""); width: 54; color: monitorTextColor(customTextColor, themeManager.isDark ? "#60A5FA" : "#3B82F6") }
+                                    TableCell { text: displayHexText(model.receiver || ""); width: 54; color: monitorTextColor(customTextColor, themeManager.isDark ? "#60A5FA" : "#3B82F6") }
+                                    TableCell { text: model.len || ""; width: 28; color: monitorTextColor(customTextColor, themeManager.isDark ? "#86EFAC" : "#10B981") }
+                                    TableCell { text: model.type || ""; width: 40; color: monitorTextColor(customTextColor, themeManager.isDark ? "#FCD34D" : "#F59E0B") }
+                                    TableCell { text: model.seq || ""; width: seqColumnWidth; color: monitorTextColor(customTextColor, themeManager.isDark ? "#93C5FD" : "#60A5FA") }
+                                    TableCell { text: displayHexText(model.cmdSet || ""); width: 56; color: monitorTextColor(customTextColor, themeManager.isDark ? "#C4B5FD" : "#8B5CF6") }
+                                    TableCell { text: displayHexText(model.cmdId || ""); width: 52; color: monitorTextColor(customTextColor, themeManager.isDark ? "#FCD34D" : "#F59E0B") }
                                     DataCell {
                                         text: displayHexText(model.data || "")
                                         width: dataColumnWidth(tableList.width)
@@ -376,7 +377,7 @@ Rectangle {
                                             data: model.data || ""
                                         })
                                     }
-                                    TableCell { text: displayHexText(model.crc || ""); width: 48; color: monitorTextColor(customTextColor, "#7DB5FF") }
+                                    TableCell { text: displayHexText(model.crc || ""); width: 48; color: monitorTextColor(customTextColor, themeManager.isDark ? "#93C5FD" : "#60A5FA") }
                                 }
                             }
                         }
@@ -472,11 +473,11 @@ Rectangle {
 
     function monitorRowColor(customColor, rowIndex, hovered, current) {
         if (current)
-            return "#183553"
+            return themeManager.isDark ? "#1A3050" : "#DBEAFE"
         if (customColor && String(customColor).length > 0)
             return String(customColor)
         if (hovered)
-            return "#1B2633"
+            return themeManager.isDark ? "#162030" : "#F3F4F6"
         return rowIndex % 2 === 0 ? surface : surfaceSoft
     }
 
@@ -495,7 +496,7 @@ Rectangle {
         background: Rectangle {
             radius: 6
             color: tabControl.active ? Qt.rgba(tabControl.accentColor.r, tabControl.accentColor.g, tabControl.accentColor.b, 0.17)
-                                     : (tabControl.hovered ? "#202A36" : "transparent")
+                                     : (tabControl.hovered ? (themeManager.isDark ? "#1A2535" : "#F3F4F6") : "transparent")
             border.color: tabControl.active ? Qt.rgba(tabControl.accentColor.r, tabControl.accentColor.g, tabControl.accentColor.b, 0.58)
                                             : (tabControl.activeFocus ? root.accent : "transparent")
             Rectangle {
@@ -532,7 +533,7 @@ Rectangle {
         background: Rectangle {
             radius: 6
             color: control.primary ? (control.hovered ? Qt.lighter(control.tone, 1.08) : control.tone)
-                                   : (control.hovered ? "#202B37" : "#161D26")
+                                   : (control.hovered ? (themeManager.isDark ? "#1A2535" : "#F3F4F6") : (themeManager.isDark ? "#131920" : "#F9FAFB"))
             border.color: control.primary ? Qt.lighter(control.tone, 1.15) : (control.activeFocus ? root.accent : root.outline)
         }
         contentItem: Text {
@@ -557,8 +558,8 @@ Rectangle {
         focusPolicy: Qt.TabFocus
         background: Rectangle {
             radius: 14
-            color: toggle.isChecked ? "#162A3E" : "#151D26"
-            border.color: toggle.activeFocus ? root.accent : (toggle.isChecked ? "#295D8E" : root.outline)
+            color: toggle.isChecked ? (themeManager.isDark ? "#0D2D4A" : "#DBEAFE") : (themeManager.isDark ? "#131920" : "#F3F4F6")
+            border.color: toggle.activeFocus ? root.accent : (toggle.isChecked ? (themeManager.isDark ? "#1E5A94" : "#93C5FD") : root.outline)
         }
         contentItem: Item {
             Rectangle {
@@ -569,7 +570,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.leftMargin: 8
                 anchors.verticalCenter: parent.verticalCenter
-                color: toggle.isChecked ? root.accent : "#52606F"
+                color: toggle.isChecked ? root.accent : (themeManager.isDark ? "#384858" : "#CBD5E1")
                 Rectangle {
                     width: 10
                     height: 10
@@ -596,7 +597,7 @@ Rectangle {
     }
 
     component HeaderCell: Text {
-        color: "#AFC0D0"
+        color: themeManager.isDark ? "#8899AA" : "#6B7280"
         font.pixelSize: 12
         font.weight: Font.DemiBold
         verticalAlignment: Text.AlignVCenter
@@ -639,7 +640,7 @@ Rectangle {
             anchors.topMargin: 3
             anchors.bottomMargin: 3
             radius: 4
-            color: dataMouse.containsMouse && dataCell.text.length > 0 ? "#1F2E3D" : "transparent"
+            color: dataMouse.containsMouse && dataCell.text.length > 0 ? (themeManager.isDark ? "#1A2535" : "#EFF6FF") : "transparent"
             border.color: dataMouse.containsMouse && dataCell.text.length > 0 ? root.outlineStrong : "transparent"
         }
 
@@ -703,7 +704,7 @@ Rectangle {
         readonly property int maxCurves: 9
         readonly property var secondsPerDivOptions: [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]
         readonly property var dataTypeOptions: ["uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64", "float LE", "double LE"]
-        readonly property var curvePalette: ["#2F81F7", "#2DBA7F", "#E3A13B", "#C586C0", "#4FC3F7", "#F06292", "#A7D38C", "#FF8A65", "#B39DDB"]
+        readonly property var curvePalette: ["#2563EB", "#059669", "#D97706", "#7C3AED", "#0891B2", "#E11D48", "#65A30D", "#EA580C", "#7C3AED"]
 
         ListModel {
             id: curveModel
@@ -802,6 +803,32 @@ Rectangle {
                     stepSize: 1
                     snapMode: Slider.SnapAlways
                     onValueChanged: card.refreshViewportOnly()
+                    background: Rectangle {
+                        x: secondsPerDivSlider.leftPadding
+                        y: secondsPerDivSlider.topPadding + secondsPerDivSlider.availableHeight / 2 - height / 2
+                        implicitWidth: 200
+                        implicitHeight: 4
+                        width: secondsPerDivSlider.availableWidth
+                        height: implicitHeight
+                        radius: 2
+                        color: surfaceSoft
+
+                        Rectangle {
+                            width: secondsPerDivSlider.visualPosition * parent.width
+                            height: parent.height
+                            color: accent
+                            radius: 2
+                        }
+                    }
+                    handle: Rectangle {
+                        x: secondsPerDivSlider.leftPadding + secondsPerDivSlider.visualPosition * (secondsPerDivSlider.availableWidth - width)
+                        y: secondsPerDivSlider.topPadding + secondsPerDivSlider.availableHeight / 2 - height / 2
+                        implicitWidth: 16
+                        implicitHeight: 16
+                        radius: 8
+                        color: secondsPerDivSlider.pressed ? Qt.lighter(accent, 1.2) : accent
+                        border.color: Qt.lighter(accent, 1.3)
+                    }
                 }
 
                 Text {
@@ -862,6 +889,46 @@ Rectangle {
                         color: surfaceSoft
                         border.color: protocolSelector.activeFocus ? accent
                                       : (protocolSelector.enabled ? outline : outlineStrong)
+                    }
+                    popup: Popup {
+                        y: protocolSelector.height + 2
+                        width: protocolSelector.width
+                        implicitHeight: contentItem.implicitHeight + 2
+                        padding: 1
+                        contentItem: ListView {
+                            clip: true
+                            implicitHeight: contentHeight
+                            model: protocolSelector.popup.visible ? protocolSelector.delegateModel : null
+                            currentIndex: protocolSelector.highlightedIndex
+                            delegate: Rectangle {
+                                width: protocolSelector.width
+                                height: protocolSelector.implicitItemHeight
+                                color: index === protocolSelector.currentIndex ? accent : (hovered ? surfaceRaised : surface)
+                                required property int index
+                                required property string modelData
+                                property bool hovered: indexMouse.containsMouse
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData
+                                    color: index === protocolSelector.currentIndex ? "#FFFFFF" : textPrimary
+                                    font.pixelSize: 11
+                                }
+                                MouseArea {
+                                    id: indexMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        protocolSelector.currentIndex = index
+                                        protocolSelector.popup.close()
+                                    }
+                                }
+                            }
+                        }
+                        background: Rectangle {
+                            radius: 5
+                            color: surface
+                            border.color: outline
+                        }
                     }
                 }
 
@@ -946,6 +1013,11 @@ Rectangle {
                                     card.deferPlotRefresh()
                                 }
                             }
+                            background: Rectangle {
+                                color: surfaceSoft
+                                border.color: activeFocus ? accent : outline
+                                radius: 5
+                            }
                         }
                         CompactLabel { text: "类型"; width: 28; height: parent.height }
                         ComboBox {
@@ -979,6 +1051,46 @@ Rectangle {
                                 verticalAlignment: Text.AlignVCenter
                                 elide: Text.ElideRight
                             }
+                            popup: Popup {
+                                y: curveTypeCombo.height + 2
+                                width: curveTypeCombo.width
+                                implicitHeight: contentItem.implicitHeight + 2
+                                padding: 1
+                                contentItem: ListView {
+                                    clip: true
+                                    implicitHeight: contentHeight
+                                    model: curveTypeCombo.popup.visible ? curveTypeCombo.delegateModel : null
+                                    currentIndex: curveTypeCombo.highlightedIndex
+                                    delegate: Rectangle {
+                                        width: curveTypeCombo.width
+                                        height: curveTypeCombo.implicitItemHeight
+                                        color: index === curveTypeCombo.currentIndex ? accent : (hovered ? surfaceRaised : surface)
+                                        required property int index
+                                        required property string modelData
+                                        property bool hovered: indexMouse.containsMouse
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData
+                                            color: index === curveTypeCombo.currentIndex ? "#FFFFFF" : textPrimary
+                                            font.pixelSize: 11
+                                        }
+                                        MouseArea {
+                                            id: indexMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            onClicked: {
+                                                curveTypeCombo.currentIndex = index
+                                                curveTypeCombo.popup.close()
+                                            }
+                                        }
+                                    }
+                                }
+                                background: Rectangle {
+                                    radius: 5
+                                    color: surface
+                                    border.color: outline
+                                }
+                            }
                         }
                         Button {
                             width: 24
@@ -987,7 +1099,7 @@ Rectangle {
                             onClicked: card.removeCurve(index)
                             background: Rectangle {
                                 radius: 5
-                                color: parent.enabled && parent.hovered ? "#3A2028" : "transparent"
+                                color: parent.enabled && parent.hovered ? (themeManager.isDark ? "#3A2028" : "#FEE2E2") : "transparent"
                                 border.color: parent.enabled ? root.danger : root.outline
                             }
                             contentItem: Text {
@@ -1007,7 +1119,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: 6
-                color: "#0D131A"
+                color: themeManager.isDark ? "#0A0F18" : "#FFFFFF"
                 border.color: outline
                 clip: true
 
@@ -1021,7 +1133,7 @@ Rectangle {
                         var ctx = getContext("2d")
                         var w = width
                         var h = height
-                        ctx.fillStyle = "#0D131A"
+                        ctx.fillStyle = themeManager.isDark ? "#0A0F18" : "#FFFFFF"
                         ctx.fillRect(0, 0, w, h)
 
                         if (card.plotConfigPaused) {
@@ -1040,7 +1152,7 @@ Rectangle {
                         var plotW = Math.max(1, w - left - right)
                         var plotH = Math.max(1, h - top - bottom)
 
-                        ctx.strokeStyle = "#1E2A36"
+                        ctx.strokeStyle = themeManager.isDark ? "#162030" : "#E5E7EB"
                         ctx.lineWidth = 1
                         for (var gx = 0; gx <= 4; gx++) {
                             var x = left + plotW * gx / 4
@@ -1294,546 +1406,211 @@ Rectangle {
             curveSamples = parsed
             latestValues = latest
             sampleCount = total
-            if (total > 0)
-                updateVisibleRange()
-            else {
-                visibleStartTime = 0
-                visibleEndTime = 0
-                visibleStartText = ""
-                visibleEndText = ""
-                minValue = 0
-                maxValue = 0
-            }
+            updateVisibleRange()
             plotCanvas.requestPaint()
         }
 
-        function cleanHexText(text) {
-            return String(text || "").trim().replace(/0x/gi, "").replace(/[^0-9A-Fa-f]/g, "")
-        }
-
-        function parseCommandByte(text) {
-            var normalized = cleanHexText(text)
-            if (normalized.length === 0)
-                return -1
-            if (!/^[0-9A-Fa-f]{1,2}$/.test(normalized))
-                return -1
-
-            var value = parseInt(normalized, 16)
-            return isFinite(value) && value >= 0 && value <= 255 ? value : -1
-        }
-
-        function parseCommandWord(text) {
-            var normalized = cleanHexText(text)
-            if (normalized.length === 0)
-                return -1
-            if (!/^[0-9A-Fa-f]{1,4}$/.test(normalized))
-                return -1
-
-            var value = parseInt(normalized, 16)
-            return isFinite(value) && value >= 0 && value <= 65535 ? value : -1
-        }
-
-        function frameMatchesCommand(frame, targetSet, targetId) {
-            if (!frame)
-                return false
-
-            if (parseCommandByte(frame.cmdSet) === targetSet
-                    && parseCommandByte(frame.cmdId) === targetId) {
-                return true
+        function updateVisibleRange() {
+            if (sampleCount === 0) {
+                visibleStartTime = 0
+                visibleEndTime = 0
+                return
             }
 
-            var targetWord = ((targetSet & 0xff) << 8) | (targetId & 0xff)
-            if (parseCommandWord(frame.cmd) === targetWord)
-                return true
-
-            return rawFrameCommandWord(frame.rawHex) === targetWord
-        }
-
-        function commandPair(cmdSet, cmdId) {
-            var setValue = cmdSet & 0xff
-            var idValue = cmdId & 0xff
-            var label = commandText(setValue, idValue)
-            return {
-                valid: true,
-                cmdSet: setValue,
-                cmdId: idValue,
-                key: hexByteText(setValue) + ":" + hexByteText(idValue),
-                label: label
-            }
-        }
-
-        function frameCommandPair(frame) {
-            if (!frame)
-                return { valid: false }
-
-            var setValue = parseCommandByte(frame.cmdSet)
-            var idValue = parseCommandByte(frame.cmdId)
-            if (setValue >= 0 && idValue >= 0)
-                return commandPair(setValue, idValue)
-
-            var word = parseCommandWord(frame.cmd)
-            if (word < 0)
-                word = rawFrameCommandWord(frame.rawHex)
-            if (word < 0)
-                return { valid: false }
-
-            return commandPair((word >> 8) & 0xff, word & 0xff)
-        }
-
-        function refreshProtocolChoices(frames) {
-            var seen = ({})
-            var entries = []
-            for (var i = 0; i < frames.length; i++) {
-                var pair = frameCommandPair(frames[i])
-                if (!pair.valid || seen[pair.key])
-                    continue
-
-                seen[pair.key] = true
-                entries.push(pair)
-            }
-
-            var signature = entries.map(function(item) { return item.key }).join("|")
-            if (signature !== protocolChoiceSignature) {
-                protocolChoiceSignature = signature
-                protocolChoiceModel.clear()
-                for (var e = 0; e < entries.length; e++) {
-                    protocolChoiceModel.append({
-                        key: entries[e].key,
-                        label: entries[e].label,
-                        cmdSet: entries[e].cmdSet,
-                        cmdId: entries[e].cmdId
-                    })
+            var latestTime = 0
+            for (var c = 0; c < curveSamples.length; c++) {
+                var list = curveSamples[c]
+                if (list.length > 0) {
+                    var lastT = list[list.length - 1].t
+                    if (lastT > latestTime)
+                        latestTime = lastT
                 }
             }
 
-            if (protocolChoiceModel.count === 0) {
-                selectedProtocolKey = ""
-                selectedProtocolIndex = -1
-                return
-            }
-
-            var preferredKey = selectedProtocolKey
-            if (preferredKey.length === 0)
-                preferredKey = String(settingsManager.loadValue("curve.protocolKey", ""))
-
-            var index = protocolIndexByKey(preferredKey)
-            if (index < 0)
-                index = 0
-
-            selectProtocol(index, false)
+            var spd = currentSecondsPerDiv()
+            var span = spd * plotTimeDivisions
+            visibleEndTime = latestTime
+            visibleStartTime = latestTime - span
         }
 
-        function protocolIndexByKey(key) {
-            if (!key || key.length === 0)
-                return -1
-
-            for (var i = 0; i < protocolChoiceModel.count; i++) {
-                if (protocolChoiceModel.get(i).key === key)
-                    return i
-            }
-            return -1
+        function currentSecondsPerDiv() {
+            var idx = Math.round(secondsPerDivSlider.value)
+            if (idx < 0) idx = 0
+            if (idx >= secondsPerDivOptions.length) idx = secondsPerDivOptions.length - 1
+            return secondsPerDivOptions[idx]
         }
 
-        function selectProtocol(index, save) {
-            if (index < 0 || index >= protocolChoiceModel.count) {
-                selectedProtocolIndex = -1
-                selectedProtocolKey = ""
-                return
-            }
-
-            var item = protocolChoiceModel.get(index)
-            selectedProtocolIndex = index
-            selectedProtocolKey = item.key
-            if (save)
-                settingsManager.saveValue("curve.protocolKey", item.key)
+        function secondsPerDivLabel(spd) {
+            if (spd < 1) return (spd * 1000).toFixed(0) + " ms"
+            if (spd < 60) return spd.toFixed(spd < 10 ? 1 : 0) + " s"
+            return (spd / 60).toFixed(1) + " min"
         }
 
-        function selectedProtocol() {
-            if (selectedProtocolIndex < 0 || selectedProtocolIndex >= protocolChoiceModel.count)
-                return { valid: false, cmdSet: -1, cmdId: -1 }
-
-            var item = protocolChoiceModel.get(selectedProtocolIndex)
-            return {
-                valid: true,
-                cmdSet: item.cmdSet,
-                cmdId: item.cmdId
-            }
-        }
-
-        function commandText(cmdSet, cmdId) {
-            return "0x" + hexByteText(cmdSet) + " / 0x" + hexByteText(cmdId)
-        }
-
-        function hexByteText(value) {
-            var text = Number(value || 0).toString(16).toUpperCase()
-            return text.length < 2 ? ("0" + text) : text.slice(-2)
-        }
-
-        function frameDataBytes(frame) {
-            if (!frame)
-                return []
-
-            var dataBytes = parseDataBytes(frame.data)
-            var rawDataBytes = rawFrameUserDataBytes(frame.rawHex)
-            return rawDataBytes.length > dataBytes.length ? rawDataBytes : dataBytes
-        }
-
-        function rawFrameCommandWord(rawHex) {
-            var raw = parseDataBytes(rawHex)
-            if (raw.length < 14 || raw[0] !== 0xaa)
-                return -1
-
-            return raw[12] | (raw[13] << 8)
-        }
-
-        function rawFrameUserDataBytes(rawHex) {
-            var raw = parseDataBytes(rawHex)
-            if (raw.length < 18 || raw[0] !== 0xaa)
-                return []
-
-            var payloadLen = raw[6] | (raw[7] << 8)
-            var payloadStart = 10
-            var dataStart = payloadStart + 6
-            var dataEnd = payloadStart + payloadLen
-            if (payloadLen < 6 || dataEnd > raw.length)
-                return []
-
-            return raw.slice(dataStart, dataEnd)
-        }
-
-        function appendCurve() {
-            if (curveModel.count >= maxCurves)
-                return
-
-            curveModel.append({
-                offset: Math.min(63, curveModel.count * 4),
-                typeIndex: defaultCurveTypeIndex(),
-                hidden: false
-            })
-            deferPlotRefresh()
-        }
-
-        function appendDefaultCurves() {
-            var floatIndex = defaultCurveTypeIndex()
-            curveModel.append({ offset: 0, typeIndex: floatIndex, hidden: false })
-            curveModel.append({ offset: 4, typeIndex: floatIndex, hidden: false })
-        }
-
-        function defaultCurveTypeIndex() {
-            var index = dataTypeOptions.indexOf("float LE")
-            return index >= 0 ? index : 0
-        }
-
-        function removeCurve(index) {
-            if (curveModel.count <= 1 || index < 0 || index >= curveModel.count)
-                return
-
-            curveModel.remove(index)
-            deferPlotRefresh()
+        function totalSampleCount(seriesList) {
+            var count = 0
+            for (var s = 0; s < seriesList.length; s++)
+                count += seriesList[s].length
+            return count
         }
 
         function curveColor(index) {
             return curvePalette[index % curvePalette.length]
         }
 
-        function currentSecondsPerDiv() {
-            var index = Math.max(0, Math.min(secondsPerDivOptions.length - 1,
-                                             Math.round(secondsPerDivSlider.value)))
-            return secondsPerDivOptions[index]
+        function formatNumber(value) {
+            if (Math.abs(value) >= 1000000) return (value / 1000000).toFixed(1) + "M"
+            if (Math.abs(value) >= 1000) return (value / 1000).toFixed(1) + "K"
+            if (Math.abs(value) < 0.01 && value !== 0) return value.toExponential(1)
+            return value.toFixed(2)
         }
 
-        function secondsPerDivLabel(value) {
-            return Number(value).toString() + "s/div"
+        function formatTimeMs(ms) {
+            return ms
         }
 
-        function updateVisibleRange() {
-            var allRange = sampleTimeRange(curveSamples)
-            if (!isFinite(allRange[0]) || !isFinite(allRange[1])) {
-                visibleStartTime = 0
-                visibleEndTime = 0
-                minValue = 0
-                maxValue = 0
-                return
+        function shortTime(ms) {
+            if (ms < 1000) return ms.toFixed(0) + "ms"
+            if (ms < 60000) return (ms / 1000).toFixed(1) + "s"
+            return (ms / 60000).toFixed(1) + "m"
+        }
+
+        function timestampMs(timestamp, frameIndex) {
+            if (!timestamp) return frameIndex
+            var parts = timestamp.split(/[:.]/)
+            if (parts.length >= 3) {
+                var h = parseInt(parts[0]) || 0
+                var m = parseInt(parts[1]) || 0
+                var s = parseInt(parts[2]) || 0
+                var ms = parseInt(parts[3]) || 0
+                return ((h * 3600 + m * 60) * 1000 + s * 1000 + ms)
             }
-
-            var allEnd = allRange[1]
-            var visibleSpan = Math.max(1, currentSecondsPerDiv() * 1000 * plotTimeDivisions)
-
-            visibleEndTime = allEnd
-            visibleStartTime = allEnd - visibleSpan
-            visibleStartText = formatTimeMs(visibleStartTime)
-            visibleEndText = formatTimeMs(visibleEndTime)
-
-            var yRange = visibleValueRange(curveSamples, visibleStartTime, visibleEndTime)
-            minValue = yRange[0]
-            maxValue = yRange[1]
+            return frameIndex
         }
 
-        function visibleValueRange(seriesList, startTime, endTime) {
-            var minVal = Number.POSITIVE_INFINITY
-            var maxVal = Number.NEGATIVE_INFINITY
-            var count = 0
-
-            for (var s = 0; s < seriesList.length; s++) {
-                var list = seriesList[s]
-                if (!list)
-                    continue
-
-                for (var i = 0; i < list.length; i++) {
-                    if (list[i].t < startTime || list[i].t > endTime)
-                        continue
-
-                    minVal = Math.min(minVal, list[i].v)
-                    maxVal = Math.max(maxVal, list[i].v)
-                    count++
-                }
-            }
-
-            if (count > 0)
-                return [minVal, maxVal]
-
-            for (var fs = 0; fs < seriesList.length; fs++) {
-                var fullList = seriesList[fs]
-                if (!fullList)
-                    continue
-
-                for (var fp = 0; fp < fullList.length; fp++) {
-                    minVal = Math.min(minVal, fullList[fp].v)
-                    maxVal = Math.max(maxVal, fullList[fp].v)
-                }
-            }
-
-            return isFinite(minVal) && isFinite(maxVal) ? [minVal, maxVal] : [0, 0]
+        function frameMatchesCommand(frame, targetSet, targetId) {
+            var fs = String(frame.cmdSet || "")
+            var fi = String(frame.cmdId || "")
+            var ts = String(targetSet || "")
+            var ti = String(targetId || "")
+            if (ts === "0x00" && ti === "0x00") return true
+            return fs === ts && fi === ti
         }
 
-        function totalSampleCount(seriesList) {
-            var total = 0
-            for (var i = 0; i < seriesList.length; i++)
-                total += seriesList[i] ? seriesList[i].length : 0
-            return total
-        }
-
-        function sampleTimeRange(seriesList) {
-            var minTime = Number.POSITIVE_INFINITY
-            var maxTime = Number.NEGATIVE_INFINITY
-            for (var s = 0; s < seriesList.length; s++) {
-                var list = seriesList[s]
-                if (!list || list.length === 0)
-                    continue
-
-                minTime = Math.min(minTime, list[0].t)
-                maxTime = Math.max(maxTime, list[list.length - 1].t)
-            }
-            return [minTime, maxTime]
-        }
-
-        function timeTextForValue(seriesList, timeValue) {
-            for (var s = 0; s < seriesList.length; s++) {
-                var list = seriesList[s]
-                if (!list)
-                    continue
-
-                for (var i = 0; i < list.length; i++) {
-                    if (list[i].t === timeValue)
-                        return list[i].timeText || ""
-                }
-            }
-            return ""
-        }
-
-        function parseDataBytes(text) {
-            var clean = String(text || "").replace(/0x/gi, " ").replace(/[^0-9A-Fa-f]/g, " ").trim()
-            if (clean.length === 0)
-                return []
-
-            var parts = clean.split(/\s+/)
-            if (parts.length === 1 && parts[0].length > 2) {
-                var compact = parts[0]
-                parts = []
-                for (var i = 0; i < compact.length - 1; i += 2)
-                    parts.push(compact.slice(i, i + 2))
-            }
-
+        function frameDataBytes(frame) {
+            var hex = String(frame.data || "").trim()
+            if (hex.length === 0) return []
+            hex = hex.replace(/0x/gi, "").replace(/[\s,;:_-]+/g, "")
             var bytes = []
-            for (var j = 0; j < parts.length; j++) {
-                var byteValue = parseInt(parts[j], 16)
-                if (isFinite(byteValue))
-                    bytes.push(byteValue & 0xff)
-            }
+            for (var i = 0; i + 1 < hex.length; i += 2)
+                bytes.push(parseInt(hex.substring(i, i + 2), 16))
             return bytes
         }
 
-        function readBytes(bytes, offset, typeText) {
-            var type = normalizeDataType(typeText)
-            var byteCount = dataTypeSize(type)
-            if (offset < 0 || offset + byteCount > bytes.length)
-                return NaN
-
-            if (type === "uint8")
+        function readBytes(bytes, offset, type) {
+            if (offset < 0 || offset >= bytes.length) return Number.NaN
+            switch (type) {
+            case "uint8": return bytes[offset]
+            case "int8": return bytes[offset] > 127 ? bytes[offset] - 256 : bytes[offset]
+            case "uint16":
+                if (offset + 1 >= bytes.length) return Number.NaN
+                return bytes[offset] | (bytes[offset + 1] << 8)
+            case "int16":
+                if (offset + 1 >= bytes.length) return Number.NaN
+                var u16 = bytes[offset] | (bytes[offset + 1] << 8)
+                return u16 > 32767 ? u16 - 65536 : u16
+            case "uint32":
+                if (offset + 3 >= bytes.length) return Number.NaN
+                return (bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)) >>> 0
+            case "int32":
+                if (offset + 3 >= bytes.length) return Number.NaN
+                return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)
+            case "float LE":
+                if (offset + 3 >= bytes.length) return Number.NaN
+                var buf = new ArrayBuffer(4)
+                var view = new DataView(buf)
+                view.setUint8(0, bytes[offset])
+                view.setUint8(1, bytes[offset + 1])
+                view.setUint8(2, bytes[offset + 2])
+                view.setUint8(3, bytes[offset + 3])
+                return view.getFloat32(0, true)
+            case "double LE":
+                if (offset + 7 >= bytes.length) return Number.NaN
+                var buf2 = new ArrayBuffer(8)
+                var view2 = new DataView(buf2)
+                for (var b = 0; b < 8; b++) view2.setUint8(b, bytes[offset + b])
+                return view2.getFloat64(0, true)
+            default:
                 return bytes[offset]
-            if (type === "int8")
-                return bytes[offset] >= 128 ? bytes[offset] - 256 : bytes[offset]
-            if (type === "uint16")
-                return readUIntLE(bytes, offset, 2)
-            if (type === "int16")
-                return toSigned(readUIntLE(bytes, offset, 2), 16)
-            if (type === "uint32")
-                return readUInt32LE(bytes, offset)
-            if (type === "int32")
-                return toSigned(readUInt32LE(bytes, offset), 32)
-            if (type === "uint64")
-                return readUInt64LE(bytes, offset)
-            if (type === "int64")
-                return readInt64LE(bytes, offset)
-            if (type === "floatle")
-                return readFloat32LE(bytes, offset)
-            if (type === "doublele")
-                return readFloat64LE(bytes, offset)
-
-            return NaN
-        }
-
-        function normalizeDataType(typeText) {
-            return String(typeText || "uint8").replace(/\s+/g, "").toLowerCase()
-        }
-
-        function dataTypeSize(typeText) {
-            var type = normalizeDataType(typeText)
-            if (type === "uint64" || type === "int64" || type === "doublele")
-                return 8
-            if (type === "uint32" || type === "int32" || type === "floatle")
-                return 4
-            if (type === "uint16" || type === "int16")
-                return 2
-            return 1
-        }
-
-        function readUIntLE(bytes, offset, byteCount) {
-            var value = 0
-            var mul = 1
-            for (var i = 0; i < byteCount; i++) {
-                value += bytes[offset + i] * mul
-                mul *= 256
             }
-            return value
         }
 
-        function readUInt32LE(bytes, offset) {
-            return bytes[offset]
-                 + bytes[offset + 1] * 256
-                 + bytes[offset + 2] * 65536
-                 + bytes[offset + 3] * 16777216
+        function commandText(cmdSet, cmdId) {
+            return "CmdSet " + cmdSet + " CmdID " + cmdId
         }
 
-        function readUInt64LE(bytes, offset) {
-            var low = readUInt32LE(bytes, offset)
-            var high = readUInt32LE(bytes, offset + 4)
-            return high * 4294967296 + low
+        function refreshProtocolChoices(frames) {
+            var seen = {}
+            protocolChoiceModel.clear()
+            for (var i = 0; i < frames.length; i++) {
+                var f = frames[i]
+                var key = String(f.cmdSet || "") + "|" + String(f.cmdId || "")
+                if (seen[key]) continue
+                seen[key] = true
+                var label = String(f.cmdSet || "") + " / " + String(f.cmdId || "")
+                if (f.cmdSet && f.cmdId) {
+                    var setNum = parseInt(String(f.cmdSet).replace(/0x/gi, ""), 16)
+                    var idNum = parseInt(String(f.cmdId).replace(/0x/gi, ""), 16)
+                    if (!isNaN(setNum) && !isNaN(idNum))
+                        label = "0x" + setNum.toString(16).toUpperCase() + " / 0x" + idNum.toString(16).toUpperCase()
+                }
+                protocolChoiceModel.append({ label: label, cmdSet: f.cmdSet || "", cmdId: f.cmdId || "" })
+            }
+
+            if (protocolChoiceModel.count > 0 && selectedProtocolIndex < 0) {
+                selectedProtocolIndex = 0
+            } else if (protocolChoiceModel.count === 0) {
+                selectedProtocolIndex = -1
+            }
         }
 
-        function readInt64LE(bytes, offset) {
-            var low = readUInt32LE(bytes, offset)
-            var high = readUInt32LE(bytes, offset + 4)
-            var value = high * 4294967296 + low
-            if (high >= 2147483648)
-                value -= 18446744073709551616
-            return value
+        function selectProtocol(index, userTriggered) {
+            if (index < 0 || index >= protocolChoiceModel.count) {
+                selectedProtocolIndex = -1
+                selectedProtocolKey = ""
+                return
+            }
+            selectedProtocolIndex = index
+            var item = protocolChoiceModel.get(index)
+            selectedProtocolKey = item.cmdSet + "|" + item.cmdId
         }
 
-        function toSigned(value, bits) {
-            var sign = Math.pow(2, bits - 1)
-            var full = Math.pow(2, bits)
-            return value >= sign ? value - full : value
+        function selectedProtocol() {
+            if (selectedProtocolIndex < 0 || selectedProtocolIndex >= protocolChoiceModel.count)
+                return { valid: false, cmdSet: "", cmdId: "" }
+            var item = protocolChoiceModel.get(selectedProtocolIndex)
+            return { valid: true, cmdSet: item.cmdSet, cmdId: item.cmdId }
         }
 
-        function readFloat32LE(bytes, offset) {
-            var bits = readUInt32LE(bytes, offset)
-            var sign = bits >= 2147483648 ? -1 : 1
-            var exponent = Math.floor(bits / 8388608) % 256
-            var fraction = bits % 8388608
-            if (exponent === 255)
-                return fraction === 0 ? sign * Infinity : NaN
-            if (exponent === 0)
-                return sign * Math.pow(2, -126) * (fraction / 8388608)
-            return sign * Math.pow(2, exponent - 127) * (1 + fraction / 8388608)
+        function appendDefaultCurves() {
+            curveModel.append({ offset: 0, typeIndex: 0, hidden: false })
+            curveModel.append({ offset: 4, typeIndex: 0, hidden: false })
         }
 
-        function readFloat64LE(bytes, offset) {
-            var low = readUInt32LE(bytes, offset)
-            var high = readUInt32LE(bytes, offset + 4)
-            var sign = high >= 2147483648 ? -1 : 1
-            var exponent = Math.floor(high / 1048576) % 2048
-            var fractionHigh = high % 1048576
-            var fraction = fractionHigh * 4294967296 + low
-            if (exponent === 2047)
-                return fraction === 0 ? sign * Infinity : NaN
-            if (exponent === 0)
-                return sign * Math.pow(2, -1022) * (fraction / 4503599627370496)
-            return sign * Math.pow(2, exponent - 1023) * (1 + fraction / 4503599627370496)
+        function appendCurve() {
+            if (curveModel.count >= maxCurves) return
+            var lastOffset = 0
+            var lastType = 0
+            if (curveModel.count > 0) {
+                var last = curveModel.get(curveModel.count - 1)
+                lastOffset = last.offset + 4
+                lastType = last.typeIndex
+            }
+            curveModel.append({ offset: lastOffset, typeIndex: lastType, hidden: false })
         }
 
-        function timestampMs(text, fallbackIndex) {
-            var match = /^(\d+):(\d+):(\d+)(?:\.(\d+))?/.exec(String(text || ""))
-            if (!match)
-                return fallbackIndex
-
-            var ms = match[4] ? Number((match[4] + "000").slice(0, 3)) : 0
-            return (Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3])) * 1000 + ms
-        }
-
-        function formatTimeMs(value) {
-            if (!isFinite(value))
-                return ""
-
-            var totalMs = Math.max(0, Math.round(value))
-            var ms = totalMs % 1000
-            var totalSeconds = Math.floor(totalMs / 1000)
-            var seconds = totalSeconds % 60
-            var totalMinutes = Math.floor(totalSeconds / 60)
-            var minutes = totalMinutes % 60
-            var hours = Math.floor(totalMinutes / 60) % 24
-            return ("0" + hours).slice(-2)
-                    + ":" + ("0" + minutes).slice(-2)
-                    + ":" + ("0" + seconds).slice(-2)
-                    + "." + ("00" + ms).slice(-3)
-        }
-
-        function formatNumber(value) {
-            if (!isFinite(value))
-                return "--"
-            if (Math.abs(value) >= 1000 || (value !== 0 && Math.abs(value) < 0.01))
-                return Number(value).toExponential(2)
-            return Number(value).toFixed(Math.abs(value) >= 100 ? 1 : 2).replace(/\.?0+$/, "")
-        }
-
-        function shortTime(text) {
-            var value = String(text || "")
-            return value.length > 8 ? value.slice(0, 12) : value
-        }
-    }
-
-    component CompactLabel: Text {
-        color: root.textSecondary
-        font.pixelSize: 11
-        verticalAlignment: Text.AlignVCenter
-        horizontalAlignment: Text.AlignRight
-    }
-
-    component CurveTag: Rectangle {
-        property alias text: tagText.text
-        property color accentColor: root.accent
-        width: 28
-        height: 28
-        radius: 6
-        color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.15)
-        border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.58)
-
-        Text {
-            id: tagText
-            anchors.centerIn: parent
-            color: root.textPrimary
-            font.pixelSize: 11
-            font.weight: Font.DemiBold
+        function removeCurve(index) {
+            if (curveModel.count <= 1) return
+            curveModel.remove(index)
         }
     }
 
@@ -1841,35 +1618,60 @@ Rectangle {
         property string label: ""
         property string value: ""
         property color accentColor: root.accent
-        Layout.preferredWidth: 76
-        Layout.preferredHeight: 28
-        radius: 6
-        color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.13)
-        border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.38)
+        height: 20
+        radius: 10
+        color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.12)
+        border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3)
+        implicitWidth: Math.max(60, badgeLabel.implicitWidth + badgeValue.implicitWidth + 20)
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 7
-            anchors.rightMargin: 7
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
             spacing: 4
 
             Text {
+                id: badgeLabel
                 text: label
                 color: root.textSecondary
                 font.pixelSize: 10
-                Layout.preferredWidth: 24
-                elide: Text.ElideRight
+                Layout.alignment: Qt.AlignVCenter
             }
             Text {
+                id: badgeValue
                 text: value
-                color: root.textPrimary
-                font.pixelSize: 11
-                font.family: "Consolas"
+                color: accentColor
+                font.pixelSize: 10
                 font.weight: Font.DemiBold
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignRight
-                elide: Text.ElideRight
+                font.family: "Consolas"
+                Layout.alignment: Qt.AlignVCenter
             }
         }
+    }
+
+    component CurveTag: Rectangle {
+        property string text: ""
+        property color accentColor: root.accent
+        width: 28
+        height: 28
+        radius: 6
+        color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.15)
+        border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.4)
+
+        Text {
+            anchors.centerIn: parent
+            text: curveTag.text
+            color: accentColor
+            font.pixelSize: 10
+            font.weight: Font.DemiBold
+            font.family: "Consolas"
+        }
+    }
+
+    component CompactLabel: Text {
+        color: root.textSecondary
+        font.pixelSize: 11
+        verticalAlignment: Text.AlignVCenter
+        elide: Text.ElideRight
     }
 }

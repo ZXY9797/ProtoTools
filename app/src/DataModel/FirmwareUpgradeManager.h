@@ -172,7 +172,7 @@ private:
     static QByteArray le32(quint32 value);
     static quint16 u16(const QByteArray &data, int offset);
     static quint32 u32(const QByteArray &data, int offset);
-    static quint8 crc8(const QByteArray &data);
+    static quint8 bcc(const QByteArray &data);
     static quint16 crc16(const QByteArray &data);
     static quint32 crc32(const QByteArray &data);
     static QString formatVersion(quint32 value);
@@ -210,8 +210,8 @@ private:
     QString m_deviceModes;
     QString m_deviceRawResponse;
 
-    int m_srcAddr = 0x0101;
-    int m_dstAddr = 0x0500;
+    int m_srcAddr = 0x10;
+    int m_dstAddr = 0x05;
     int m_requestedPacketSize = 65535;
     int m_timeoutMs = 3000;
     int m_retries = 3;

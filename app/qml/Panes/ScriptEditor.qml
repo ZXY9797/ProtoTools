@@ -5,7 +5,7 @@ import ProtoDebug
 
 Rectangle {
     id: root
-    color: "#1E1E1E"
+    color: "#0C1017"
 
     property bool consoleVisible: true
 
@@ -201,7 +201,7 @@ Rectangle {
         modal: true
         anchors.centerIn: Overlay.overlay
         standardButtons: Dialog.Save | Dialog.Discard | Dialog.Cancel
-        Label { text: "脚本已修改，是否保存？"; color: "#D4D4D4" }
+        Label { text: "脚本已修改，是否保存？"; color: themeManager.isDark ? "#E8EDF5" : "#111827" }
         onAccepted: {
             var idx = pendingCloseIndex
             if (idx >= 0 && idx < tabModel.count) {
@@ -244,7 +244,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 30
-            color: "#2D2D2D"
+            color: themeManager.isDark ? "#1A222C" : "#F3F4F6"
 
             RowLayout {
                 anchors.fill: parent
@@ -270,12 +270,12 @@ Rectangle {
                             Rectangle {
                                 width: tabLabel.implicitWidth + 52
                                 height: 30
-                                color: index === currentTabIndex ? "#1E1E1E" : (tabMouse.containsMouse ? "#383838" : "#2D2D2D")
+                                color: index === currentTabIndex ? (themeManager.isDark ? "#1E1E1E" : "#FFFFFF") : (tabMouse.containsMouse ? (themeManager.isDark ? "#2A2A2A" : "#F3F4F6") : (themeManager.isDark ? "#2D2D2D" : "#F9FAFB"))
 
                                 // 活跃指示条
                                 Rectangle {
                                     width: parent.width; height: 2
-                                    color: "#007ACC"
+                                    color: themeManager.isDark ? "#3B8AFF" : "#2563EB"
                                     anchors.top: parent.top
                                     visible: index === currentTabIndex
                                 }
@@ -289,7 +289,7 @@ Rectangle {
                                     Text {
                                         id: tabLabel
                                         text: (model.modified ? "● " : "") + model.title
-                                        color: index === currentTabIndex ? "#FFFFFF" : "#AAAAAA"
+                                        color: index === currentTabIndex ? (themeManager.isDark ? "#FFFFFF" : "#111827") : (themeManager.isDark ? "#AAAAAA" : "#6B7280")
                                         font.pixelSize: 11
                                         font.family: "Menlo"
                                     }
@@ -301,11 +301,11 @@ Rectangle {
                                         Layout.preferredWidth: 18
                                         Layout.preferredHeight: 18
                                         radius: 9
-                                        color: closeMouse.containsMouse ? "#555555" : "transparent"
+                                        color: closeMouse.containsMouse ? (themeManager.isDark ? "#555555" : "#E5E7EB") : "transparent"
                                         Text {
                                             anchors.centerIn: parent
                                             text: "×"
-                                            color: closeMouse.containsMouse ? "#FFFFFF" : "#888888"
+                                            color: closeMouse.containsMouse ? (themeManager.isDark ? "#FFFFFF" : "#111827") : (themeManager.isDark ? "#888888" : "#9CA3AF")
                                             font.pixelSize: 13
                                         }
                                         MouseArea {
@@ -330,11 +330,11 @@ Rectangle {
                         // + 新建标签按钮（紧跟最后一个标签）
                         Rectangle {
                             width: 28; height: 30
-                            color: plusMouse.containsMouse ? "#383838" : "transparent"
+                            color: plusMouse.containsMouse ? (themeManager.isDark ? "#2A2A2A" : "#F3F4F6") : "transparent"
                             Text {
                                 anchors.centerIn: parent
                                 text: "+"
-                                color: plusMouse.containsMouse ? "#FFFFFF" : "#888888"
+                                color: plusMouse.containsMouse ? (themeManager.isDark ? "#FFFFFF" : "#111827") : (themeManager.isDark ? "#888888" : "#9CA3AF")
                                 font.pixelSize: 16
                             }
                             MouseArea {
@@ -362,7 +362,7 @@ Rectangle {
             handle: Rectangle {
                 implicitWidth: 4
                 visible: root.consoleVisible
-                color: SplitHandle.pressed ? "#007ACC" : (SplitHandle.hovered ? "#007ACC" : "#333333")
+                color: SplitHandle.pressed ? (themeManager.isDark ? "#3B8AFF" : "#2563EB") : (SplitHandle.hovered ? (themeManager.isDark ? "#3B8AFF" : "#2563EB") : (themeManager.isDark ? "#333333" : "#D1D5DB"))
             }
 
             // QCodeEditor
@@ -393,8 +393,8 @@ Rectangle {
                 SplitView.minimumWidth: root.consoleVisible ? 300 : 0
                 SplitView.preferredWidth: root.consoleVisible ? 420 : 0
                 visible: root.consoleVisible
-                color: "#1A1A1A"
-                border.color: "#333333"
+                color: themeManager.isDark ? "#1A1A1A" : "#F9FAFB"
+                border.color: themeManager.isDark ? "#333333" : "#E5E7EB"
                 border.width: 1
 
                 ColumnLayout {
@@ -406,29 +406,29 @@ Rectangle {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 18
-                        color: "#252526"
+                        color: themeManager.isDark ? "#252526" : "#F3F4F6"
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 6
                             anchors.rightMargin: 6
                             Text {
                                 text: "🖥️ Lua 控制台"
-                                color: "#007ACC"
+                                color: themeManager.isDark ? "#3B8AFF" : "#2563EB"
                                 font.pixelSize: 10
                             }
                             Item { Layout.fillWidth: true }
                             Text {
                                 text: luaEngine && luaEngine.running ? "运行中 ●" : "已停止 ○"
-                                color: luaEngine && luaEngine.running ? "#4EC9B0" : "#888888"
+                                color: luaEngine && luaEngine.running ? (themeManager.isDark ? "#34D399" : "#059669") : (themeManager.isDark ? "#888888" : "#9CA3AF")
                                 font.pixelSize: 9
                             }
                             Rectangle {
                                 width: 30; height: 14; radius: 3
-                                color: clearConsoleMouse.containsMouse ? "#333333" : "transparent"
+                                color: clearConsoleMouse.containsMouse ? (themeManager.isDark ? "#333333" : "#E5E7EB") : "transparent"
                                 Text {
                                     anchors.centerIn: parent
                                     text: "清空"
-                                    color: "#888888"
+                                    color: themeManager.isDark ? "#888888" : "#6B7280"
                                     font.pixelSize: 9
                                 }
                                 MouseArea {
@@ -453,7 +453,7 @@ Rectangle {
                         delegate: Rectangle {
                             width: consoleList.width
                             height: 18
-                            color: index % 2 === 0 ? "#1A1A1A" : "#1E1E1E"
+                            color: index % 2 === 0 ? (themeManager.isDark ? "#1A1A1A" : "#F9FAFB") : (themeManager.isDark ? "#1E1E1E" : "#FFFFFF")
                             Text {
                                 anchors.left: parent.left
                                 anchors.leftMargin: 6
@@ -461,7 +461,7 @@ Rectangle {
                                 anchors.rightMargin: 6
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: model.text || ""
-                                color: model.isError ? "#F44747" : "#AAAAAA"
+                                color: model.isError ? (themeManager.isDark ? "#F44747" : "#DC2626") : (themeManager.isDark ? "#AAAAAA" : "#6B7280")
                                 font.pixelSize: 10
                                 font.family: "Menlo"
                                 elide: Text.ElideRight
@@ -476,7 +476,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 28
-            color: "#252526"
+            color: themeManager.isDark ? "#252526" : "#F3F4F6"
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 6
@@ -489,7 +489,7 @@ Rectangle {
                     font.pixelSize: 11; padding: 3; leftPadding: 8; rightPadding: 8
                     background: Rectangle {
                         radius: 3
-                        color: luaEngine && luaEngine.running ? "#C53030" : "#16825D"
+                        color: luaEngine && luaEngine.running ? (themeManager.isDark ? "#C53030" : "#DC2626") : (themeManager.isDark ? "#16825D" : "#059669")
                     }
                     contentItem: Text {
                         text: parent.text
@@ -514,12 +514,12 @@ Rectangle {
                     font.pixelSize: 11; padding: 3; leftPadding: 8; rightPadding: 8
                     background: Rectangle {
                         radius: 3
-                        color: enabled ? "#333333" : "#222222"
-                        border.color: enabled ? "#555555" : "#333333"
+                        color: enabled ? (themeManager.isDark ? "#333333" : "#E5E7EB") : (themeManager.isDark ? "#222222" : "#F3F4F6")
+                        border.color: enabled ? (themeManager.isDark ? "#555555" : "#D1D5DB") : (themeManager.isDark ? "#333333" : "#E5E7EB")
                     }
                     contentItem: Text {
                         text: parent.text
-                        color: enabled ? "#CCCCCC" : "#555555"
+                        color: enabled ? (themeManager.isDark ? "#CCCCCC" : "#374151") : (themeManager.isDark ? "#555555" : "#9CA3AF")
                         font: parent.font
                     }
                     onClicked: doSaveFile()
@@ -532,12 +532,12 @@ Rectangle {
                     font.pixelSize: 11; padding: 3; leftPadding: 8; rightPadding: 8
                     background: Rectangle {
                         radius: 3
-                        color: enabled ? "#333333" : "#222222"
-                        border.color: enabled ? "#555555" : "#333333"
+                        color: enabled ? (themeManager.isDark ? "#333333" : "#E5E7EB") : (themeManager.isDark ? "#222222" : "#F3F4F6")
+                        border.color: enabled ? (themeManager.isDark ? "#555555" : "#D1D5DB") : (themeManager.isDark ? "#333333" : "#E5E7EB")
                     }
                     contentItem: Text {
                         text: parent.text
-                        color: enabled ? "#CCCCCC" : "#555555"
+                        color: enabled ? (themeManager.isDark ? "#CCCCCC" : "#374151") : (themeManager.isDark ? "#555555" : "#9CA3AF")
                         font: parent.font
                     }
                     onClicked: loadFile()
@@ -549,7 +549,7 @@ Rectangle {
                 Text {
                     visible: tabModel.count > 0 && currentTabIndex >= 0 && currentTabIndex < tabModel.count
                     text: (currentTabIndex < tabModel.count ? (tabModel.get(currentTabIndex).filePath || "(新文件)") : "")
-                    color: "#555555"
+                    color: themeManager.isDark ? "#555555" : "#9CA3AF"
                     font.pixelSize: 9
                     elide: Text.ElideLeft
                     Layout.maximumWidth: 300
@@ -561,12 +561,12 @@ Rectangle {
                     font.pixelSize: 11; padding: 3; leftPadding: 8; rightPadding: 8
                     background: Rectangle {
                         radius: 3
-                        color: root.consoleVisible ? "#094771" : "#333333"
-                        border.color: "#555555"
+                        color: root.consoleVisible ? (themeManager.isDark ? "#094771" : "#DBEAFE") : (themeManager.isDark ? "#333333" : "#E5E7EB")
+                        border.color: (themeManager.isDark ? "#555555" : "#D1D5DB")
                     }
                     contentItem: Text {
                         text: parent.text
-                        color: "#CCCCCC"
+                        color: (themeManager.isDark ? "#CCCCCC" : "#374151")
                         font: parent.font
                     }
                     onClicked: root.consoleVisible = !root.consoleVisible
@@ -591,7 +591,7 @@ Rectangle {
 
     property string defaultScriptMarker: "KPTOOLS_LUA_DEFAULT_V2"
     property string defaultScriptReference: [
-        "-- KPtools Lua default - " + defaultScriptMarker,
+        "-- ProtoTools Lua default - " + defaultScriptMarker,
         "-- on_frame_recv(frame) can return:",
         "--   false                         filter this frame",
         "--   true                          show this frame",
@@ -675,7 +675,7 @@ Rectangle {
 
     // Default script
     property string defaultScript:
-        "-- KPtools Lua 脚本\n" +
+        "-- ProtoTools Lua 脚本\n" +
         "-- ═══════════════════════════════════════════\n" +
         "-- 自动回调：\n" +
         "--   on_frame_recv(frame)  收到帧时触发\n" +
